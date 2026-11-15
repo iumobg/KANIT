@@ -255,6 +255,28 @@ def test_per_organism_panel_counts_and_the_largest_minority():
     assert n["enterobacter_cloacae.max_minority"] == 50
 
 
+class DesignTables(FakeTables):
+    """The same run with each model's fold design (cv_design.json)."""
+
+    SHARE = {("ecoli", "ampicillin"): 0.1, ("ecoli", "ciprofloxacin"): 0.4,
+             ("enterobacter_cloacae", "amikacin"): 0.9}
+
+    def json(self, location, file, organism=None, antibiotic=None):
+        if location == "cv_dir" and (organism, antibiotic) in self.SHARE:
+            return {"largest_lineage_share": self.SHARE[(organism, antibiotic)]}
+        return None
+
+
+def test_the_largest_lineage_share_is_over_the_included_models():
+    """Median and largest over an organism's models; an excluded pair's design does not
+    count, and an organism without designs has no key."""
+    n = _numbers(DesignTables())
+    assert n["ecoli.model_largest_lineage_share_median"] == 0.25
+    assert n["ecoli.model_largest_lineage_share_max"] == 0.4
+    assert "enterobacter_cloacae.model_largest_lineage_share_max" not in n
+    assert "kpneumoniae.model_largest_lineage_share_median" not in n
+
+
 def test_qc_genomes_are_summed_over_organisms():
     """Each organism has its own genomes, so the total is a sum, not a union."""
     n = _numbers()

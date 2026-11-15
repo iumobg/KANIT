@@ -1276,6 +1276,22 @@ def numbers(t: Tables, organisms: list[str]) -> pd.DataFrame:
         if cl is not None:
             put(f"{org}.n_lineages", int(cl["Cluster"].nunique()), "lineage_clusters", "Cluster",
                 "PopPUNK lineages")
+        if dec is not None:
+            # The lineage-aware folds never split a lineage, so a model whose largest lineage
+            # holds more than a fold's share of its genomes tests that lineage as one fold.
+            pairs = dec[(dec["organism"] == org) & (dec["decision"] == panel.INCLUDED)]
+            shares = [d["largest_lineage_share"] for ab in pairs["antibiotic"]
+                      if (d := t.json("cv_dir", "cv_design.json", org, ab)) is not None]
+            if shares:
+                put(f"{org}.model_largest_lineage_share_median",
+                    round(float(pd.Series(shares).median()), 6),
+                    "cv_design", "largest_lineage_share",
+                    "Share (0-1) of a model's genomes in its largest lineage, median over the "
+                    "organism's models")
+                put(f"{org}.model_largest_lineage_share_max", round(float(max(shares)), 6),
+                    "cv_design", "largest_lineage_share",
+                    "Share (0-1) of a model's genomes in its largest lineage, largest over the "
+                    "organism's models")
         comp = t.get("external_comparison", org)
         if comp is not None:
             comparisons.append(comp)
