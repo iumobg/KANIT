@@ -28,7 +28,9 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
+import yaml
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
@@ -1131,6 +1133,226 @@ def _cabbage_numbers(t: Tables, organisms: list[str], put) -> None:
             "Upper 95% bound, organism-clustered bootstrap")
 
 
+# ---- Makale 3: arms B and C under a feature budget ---------------------------------------
+# Arm A is the main run. Arms B (arm A's unitig patterns) and C (the organism's raw canonical
+# 31-mers, not collapsed) keep the K features with the largest χ² inside every training set
+# and are graded as arm A is (config/m3_B.yml, config/m3_C.yml). An arm's outputs sit where its
+# overlay moves them, below this configuration's own prefix. Only the arm's own outputs are
+# read, so the overlay's exclusions (the inputs it shares with arm A) are not carried over.
+# Performance: lineage-aware ROC-AUC, pair by pair as the CABBAGE predictors. Redundancy:
+# distinct presence vectors among the final model's K features, one vector being one signal
+# (arm C repeats a locus's signal once per k-mer). Grades: the arms against each other, and
+# against arm A only inside arm A's own χ² prefilter, where the budget's criterion would have
+# kept them too (decision of 15.11).
+M3_ARMS = ("B", "C")
+M3_LAYERS = ("prevalence", "mda", "cpss", "pyseer")
+# copies of a candidate's presence vector among the K features
+M3_COPIES = (("one", 1, 1), ("2_10", 2, 10), ("over_10", 11, None))
+
+
+def _m3_arm_tables(t: Tables) -> dict[str, Tables]:
+    """The tables of every arm whose overlay exists, under this configuration's prefix."""
+    if not isinstance(t, Tables):
+        return {}
+    arms = {}
+    base = t.config.get("paths_prefix")
+    for arm in M3_ARMS:
+        p = PROJECT_ROOT / "config" / f"m3_{arm}.yml"
+        prefix = (yaml.safe_load(p.read_text()) or {}).get("paths_prefix") if p.exists() else None
+        if prefix:
+            arms[arm] = Tables({**t.config, "paths_prefix_exclude": [],
+                                "paths_prefix": f"{base.rstrip('/')}/{prefix}" if base else prefix})
+    return arms
+
+
+def _m3_vectors(t, org: str, ab: str) -> pd.DataFrame | None:
+    """Per feature of the final model (row = pattern_id): its presence vector's number and
+    copies among the K features. None without the arm's model matrix."""
+    try:
+        d = contract.output_path("matrix_dir", "", t.config, org, ab)
+    except KeyError:
+        return None
+    if not (d / "patterns.bin").exists():
+        return None
+    shape = json.loads((d / "matrix_summary.json").read_text())["patterns_shape"]
+    bits = np.fromfile(d / "patterns.bin", dtype=np.uint8).reshape(shape)
+    _, vector, copies = np.unique(bits, axis=0, return_inverse=True, return_counts=True)
+    vector = vector.ravel()
+    return pd.DataFrame({"vector": vector, "copies": copies[vector]})
+
+
+def _m3_compare(auc: pd.DataFrame, a: str, b: str, put, n_boot: int) -> None:
+    if a not in auc or b not in auc:
+        return
+    both = auc[[a, b]].dropna()
+    if both.empty:
+        return
+    d = both[a] - both[b]
+    s = concordance.sign_test(d)
+    pd_ = concordance.paired_difference(d, [i.split("__")[0] for i in d.index], n_boot=n_boot)
+    pre, src = f"m3.compare.{a}__{b}", "cv_metrics"
+    put(f"{pre}.n_pairs", len(both), src, "roc_auc", f"Models both arm {a} and arm {b} evaluate")
+    put(f"{pre}.median_diff", pd_["median"], src, "roc_auc",
+        f"Median paired difference in lineage-aware ROC-AUC, arm {a} minus arm {b}")
+    put(f"{pre}.ci_low", pd_["ci_low"], src, "roc_auc",
+        "Lower 95% bound of that difference, organism-clustered bootstrap")
+    put(f"{pre}.ci_high", pd_["ci_high"], src, "roc_auc",
+        "Upper 95% bound of that difference, organism-clustered bootstrap")
+    put(f"{pre}.n_organisms", pd_["n_clusters"], src, "model_id", "Organisms behind those models")
+    put(f"{pre}.n_a_better", s["n_positive"], src, "roc_auc", f"Models where arm {a} is higher")
+    put(f"{pre}.n_b_better", s["n_negative"], src, "roc_auc", f"Models where arm {b} is higher")
+    put(f"{pre}.n_tied", s["n_tied"], src, "roc_auc", "Models where the arms tie")
+    if s["p_value"] is not None:
+        put(f"{pre}.p", _four_significant(s["p_value"]), src, "roc_auc",
+            f"Two-sided sign test, arm {a} vs arm {b}, ties dropped", digits=None)
+
+
+def _m3_grade_numbers(c: pd.DataFrame, pre: str, what: str, put) -> None:
+    """Grades, CARD state and layers of one arm's candidates (one row per candidate)."""
+    n = len(c)
+    put(f"{pre}.n_candidates", n, "grades_patterns", "pattern_id",
+        f"Candidates of {what}, summed over models")
+    if not n:
+        return
+    for g in F.GRADES:
+        k = int((c["grade"] == g).sum())
+        put(f"{pre}.n_{g}", k, "grades_patterns", "grade", f"Candidates of {what} graded {g}")
+        put(f"{pre}.share_{g}", k / n, "grades_patterns", "grade",
+            f"Share (0-1) of the candidates of {what} graded {g}")
+    b = c[c["allele_aware_card_state"] == "b"]
+    put(f"{pre}.share_card_b", len(b) / n, "grades_patterns", "allele_aware_card_state",
+        f"Share (0-1) of the candidates of {what} with b = 1")
+    for layer in M3_LAYERS:
+        put(f"{pre}.share_pass_{layer}", float(c[layer].astype(bool).mean()), "grades_patterns",
+            layer, f"Share (0-1) of the candidates of {what} passing the {layer} layer")
+        if len(b):
+            put(f"{pre}.b.share_pass_{layer}", float(b[layer].astype(bool).mean()),
+                "grades_patterns", layer,
+                f"Share (0-1) of the b = 1 candidates of {what} passing the {layer} layer")
+    aros = b.assign(aro=b["aros"].astype(str).str.split(";")).explode("aro")
+    per_aro = aros[aros["aro"].str.len() > 0].groupby(["model", "aro"]).size()
+    if len(per_aro):
+        put(f"{pre}.candidates_per_b_aro_median", float(per_aro.median()), "card_patterns",
+            "allele_aware_aros",
+            f"Candidates of {what} carrying one b = 1 determinant, median over models and AROs")
+        put(f"{pre}.candidates_per_b_aro_max", int(per_aro.max()), "card_patterns",
+            "allele_aware_aros", "Largest of those counts")
+
+
+def _m3_numbers(t: Tables, arms: dict, organisms: list[str], put) -> None:
+    dec = t.get("panel_decisions")
+    if dec is None or not arms:
+        return
+    pairs = dec[(dec["decision"] == panel.INCLUDED) & dec["organism"].isin(organisms)]
+    top_gain = int((t.config.get("candidates") or {}).get("top_gain") or 50)
+    auc: dict[str, dict[str, float]] = {}
+    chi2: dict[str, dict[str, float]] = {}
+    cands: dict[str, list[pd.DataFrame]] = {}
+    redundancy: dict[str, list[dict]] = {}
+    short: dict[str, int] = {}
+    for org, ab in zip(pairs["organism"], pairs["antibiotic"], strict=True):
+        mid = f"{org}__{ab}"
+        for arm, tx in {"A": t, **arms}.items():
+            m = tx.json("cv_dir", "metrics.json", org, ab)
+            if m is None:
+                continue
+            auc.setdefault(arm, {})[mid] = m["arms"]["lineage_aware"]["roc_auc"]
+            g = tx.get("grades_patterns", org, ab)
+            pf = tx.get("cpss_prefilter", org, ab)
+            if g is None or pf is None:
+                continue
+            card = tx.get("card_patterns", org, ab, dtype={"allele_aware_aros": str})
+            aros = (card.set_index("pattern_id")["allele_aware_aros"] if card is not None
+                    else pd.Series(dtype=str))
+            g = g.assign(model=mid, aros=g["pattern_id"].map(aros).fillna(""))
+            if arm == "A":
+                cands.setdefault("A_prefilter", []).append(g[g["pattern_id"].isin(pf["pattern_id"])])
+                continue
+            chi2.setdefault(arm, {})[mid] = float(pf["chi2"].min())
+            cand = tx.get("candidates", org, ab)
+            if cand is not None and cand["gain_rank"].notna().sum() < top_gain:
+                short[arm] = short.get(arm, 0) + 1
+            v = _m3_vectors(tx, org, ab)
+            if v is not None:
+                k = len(v)
+                n_vec = int(v["vector"].nunique())
+                redundancy.setdefault(arm, []).append(
+                    {"distinct": n_vec, "per_vector": k / n_vec,
+                     "largest_share": float(v["copies"].max()) / k})
+                g = g.join(v, on="pattern_id")
+            cands.setdefault(arm, []).append(g)
+
+    n_boot = int(t.config["cv"]["n_bootstrap"])
+    a = pd.DataFrame(auc)
+    for arm in a:
+        put(f"m3.{arm}.n_models", int(a[arm].notna().sum()), "cv_metrics", "roc_auc",
+            f"Models arm {arm} evaluates")
+        put(f"m3.{arm}.roc_auc_median", float(a[arm].median()), "cv_metrics", "roc_auc",
+            f"Median lineage-aware ROC-AUC of arm {arm}")
+    for x, y in (("C", "B"), ("B", "A"), ("C", "A")):
+        _m3_compare(a, x, y, put, n_boot)
+
+    for arm, per in chi2.items():
+        put(f"m3.{arm}.chi2_at_budget_median", float(pd.Series(per).median()), "cpss_prefilter",
+            "chi2", f"χ² of the K-th feature of arm {arm}'s final model, median over models")
+        put(f"m3.{arm}.n_models_fewer_than_top_gain", short.get(arm, 0), "candidates",
+            "gain_rank", f"Models of arm {arm} whose final model gains on fewer than "
+            f"{top_gain} features")
+    if "B" in chi2 and "C" in chi2:
+        both = pd.DataFrame(chi2)[["B", "C"]].dropna()
+        put("m3.compare.C__B.n_chi2_at_budget_higher", int((both["C"] > both["B"]).sum()),
+            "cpss_prefilter", "chi2", "Models where arm C's K-th χ² is above arm B's")
+
+    for arm, rows in redundancy.items():
+        r = pd.DataFrame(rows)
+        pre = f"m3.{arm}"
+        put(f"{pre}.n_models_with_matrix", len(r), "model_patterns", "pattern_id",
+            f"Models of arm {arm} whose final model matrix is at hand")
+        put(f"{pre}.distinct_vectors_median", float(r["distinct"].median()), "model_patterns",
+            "pattern_id", f"Distinct presence vectors among the K features of arm {arm}, "
+            "median over models")
+        put(f"{pre}.distinct_vectors_min", int(r["distinct"].min()), "model_patterns",
+            "pattern_id", "Fewest of those over models")
+        put(f"{pre}.distinct_vectors_max", int(r["distinct"].max()), "model_patterns",
+            "pattern_id", "Most of those over models")
+        put(f"{pre}.features_per_vector_median", float(r["per_vector"].median()),
+            "model_patterns", "pattern_id",
+            f"Features per distinct presence vector of arm {arm}, median over models")
+        put(f"{pre}.largest_vector_share_median", float(r["largest_share"].median()),
+            "model_patterns", "pattern_id",
+            f"Share (0-1) of the K features of arm {arm} that carry its most-copied vector, "
+            "median over models")
+        put(f"{pre}.largest_vector_share_max", float(r["largest_share"].max()),
+            "model_patterns", "pattern_id", "Share (0-1) of the K features that carry the "
+            "most-copied vector, largest over models")
+
+    labels = {"A_prefilter": "arm A inside its χ² prefilter", "B": "arm B", "C": "arm C"}
+    for arm, parts in cands.items():
+        c = pd.concat(parts, ignore_index=True)
+        _m3_grade_numbers(c, f"m3.{arm}", labels[arm], put)
+        if "copies" not in c or c["copies"].isna().any():
+            continue
+        # one signal per presence vector: a candidate's copies carry the same signal, and the
+        # signal takes the best grade any of them reached
+        best = (c.assign(rank=c["grade"].map(GRADE_ORDER))
+                .groupby(["model", "vector"])["rank"].min().map(dict(enumerate(F.GRADES))))
+        put(f"m3.{arm}.n_candidate_signals", len(best), "grades_patterns", "pattern_id",
+            f"Distinct presence vectors among the candidates of arm {arm}, summed over models")
+        for g in F.GRADES:
+            put(f"m3.{arm}.signal.share_{g}", float((best == g).mean()), "grades_patterns",
+                "grade", f"Share (0-1) of those signals whose best candidate is graded {g}")
+        for name, lo, hi in M3_COPIES:
+            sel = c[(c["copies"] >= lo) & ((c["copies"] <= hi) if hi else True)]
+            put(f"m3.{arm}.copies_{name}.n_candidates", len(sel), "model_patterns", "pattern_id",
+                f"Candidates of arm {arm} whose vector has {name.replace('_', '-')} copies "
+                "among the K features")
+            if len(sel):
+                for layer in ("mda", "cpss"):
+                    put(f"m3.{arm}.copies_{name}.share_pass_{layer}",
+                        float(sel[layer].astype(bool).mean()), "grades_patterns", layer,
+                        f"Share (0-1) of those candidates passing the {layer} layer")
+
+
 def _kb_numbers(db: Path, put) -> None:
     con = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
     try:
@@ -1577,6 +1799,7 @@ def numbers(t: Tables, organisms: list[str]) -> pd.DataFrame:
     if kb is not None and kb.exists():
         _kb_numbers(kb, put)
     _cabbage_numbers(t, organisms, put)
+    _m3_numbers(t, _m3_arm_tables(t), organisms, put)
     return pd.DataFrame(rows, columns=["key", "value", "source_table", "column", "description"])
 
 

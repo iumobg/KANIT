@@ -452,3 +452,106 @@ def test_direction_counts_every_candidate_and_the_strong_novel_ones():
     n = _numbers()
     assert n["all.n_direction_r"] == 4 and n["all.n_direction_s"] == 2
     assert n["all.n_strong_novel_direction_r"] == 0 and n["all.n_strong_novel_direction_s"] == 1
+
+
+# ---- Makale 3 (arms B and C) -----------------------------------------------------------
+# Three included models; enterobacter_cloacae is excluded and must not count.
+M3_AUC = {"A": {"ecoli__ampicillin": 0.90, "ecoli__ciprofloxacin": 0.80,
+                "kpneumoniae__meropenem": 0.70},
+          "B": {"ecoli__ampicillin": 0.92, "ecoli__ciprofloxacin": 0.80,
+                "kpneumoniae__meropenem": 0.72},
+          "C": {"ecoli__ampicillin": 0.88, "ecoli__ciprofloxacin": 0.79,
+                "kpneumoniae__meropenem": 0.75, "enterobacter_cloacae__amikacin": 0.5}}
+# Arm C's final model of ecoli/ampicillin: features 0, 1 and 2 share one presence vector,
+# feature 3 has its own. Candidates 0 (weak), 1 (confirmed, b = 1) and 3 (candidate).
+M3_BITS = [[0b10100000], [0b10100000], [0b10100000], [0b01000000]]
+M3_GRADES = {"pattern_id": [0, 1, 3], "grade": ["weak", "confirmed", "candidate"],
+             "allele_aware_card_state": ["no_card_hit", "b", "no_card_hit"],
+             "prevalence": [True, True, True], "mda": [False, True, False],
+             "cpss": [False, False, True], "pyseer": [False, True, True]}
+
+
+class M3Tables:
+    """One arm's outputs: a ROC-AUC per model; candidates, χ² prefilter and model matrix
+    for ecoli/ampicillin only."""
+
+    def __init__(self, arm, root=None, prefilter=(0, 1, 3)):
+        self.arm, self.prefilter = arm, list(prefilter)
+        self.config = {"cv": {"n_bootstrap": 200}, "candidates": {"top_gain": 50},
+                       "paths_organism": {"matrix_dir": f"{root}/{{organism}}/{{antibiotic}}"}
+                       if root else {}}
+
+    def get(self, tid, organism=None, antibiotic=None, **_):
+        if tid == "panel_decisions":
+            return DECISIONS
+        if (organism, antibiotic) != ("ecoli", "ampicillin"):
+            return None
+        if tid == "grades_patterns":
+            return pd.DataFrame(M3_GRADES)
+        if tid == "cpss_prefilter":
+            return pd.DataFrame({"pattern_id": self.prefilter,
+                                 "chi2": [30.0, 20.0, 10.0][:len(self.prefilter)]})
+        if tid == "card_patterns":
+            return pd.DataFrame({"pattern_id": [1], "allele_aware_aros": ["3000001"]})
+        if tid == "candidates":
+            return pd.DataFrame({"pattern_id": [0, 1, 3], "gain_rank": [1, 2, 3]})
+        return None
+
+    def json(self, location, file, organism=None, antibiotic=None):
+        v = M3_AUC[self.arm].get(f"{organism}__{antibiotic}")
+        return None if v is None else {"arms": {"lineage_aware": {"roc_auc": v}}}
+
+
+def _m3_numbers(arms, base=None):
+    sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
+    spec = importlib.util.spec_from_file_location("amrtest_reports_m3",
+                                                  PROJECT_ROOT / "scripts" / "reports.py")
+    m = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(m)
+    rows = {}
+    m._m3_numbers(base or M3Tables("A"), arms,
+                  ["ecoli", "kpneumoniae", "enterobacter_cloacae"],
+                  lambda key, value, *a, **k: rows.__setitem__(key, value))
+    return rows
+
+
+def test_m3_arms_are_compared_over_the_included_models_they_share():
+    n = _m3_numbers({"B": M3Tables("B"), "C": M3Tables("C")})
+    assert n["m3.C.n_models"] == 3            # the excluded pair stays out
+    assert n["m3.compare.C__B.n_pairs"] == 3
+    assert (n["m3.compare.C__B.n_a_better"], n["m3.compare.C__B.n_b_better"]) == (1, 2)
+    assert n["m3.compare.B__A.n_tied"] == 1
+    assert n["m3.compare.C__B.median_diff"] == pytest.approx(-0.01)
+
+
+def test_m3_redundancy_counts_distinct_presence_vectors(tmp_path):
+    import numpy as np
+    d = tmp_path / "ecoli" / "ampicillin"
+    d.mkdir(parents=True)
+    np.array(M3_BITS, dtype=np.uint8).tofile(d / "patterns.bin")
+    (d / "matrix_summary.json").write_text('{"patterns_shape": [4, 1]}')
+    n = _m3_numbers({"C": M3Tables("C", root=tmp_path)})
+    assert n["m3.C.distinct_vectors_median"] == 2
+    assert n["m3.C.features_per_vector_median"] == 2
+    assert n["m3.C.largest_vector_share_max"] == pytest.approx(0.75)
+    # candidates 0 and 1 are one signal, graded by its best copy
+    assert n["m3.C.n_candidate_signals"] == 2
+    assert n["m3.C.signal.share_confirmed"] == 0.5
+    assert n["m3.C.signal.share_weak"] == 0
+    assert n["m3.C.copies_2_10.n_candidates"] == 2
+    assert n["m3.C.copies_one.share_pass_cpss"] == 1
+    assert n["m3.C.n_models_fewer_than_top_gain"] == 1
+
+
+def test_m3_no_signal_keys_without_the_arm_matrix():
+    n = _m3_numbers({"B": M3Tables("B")})
+    assert n["m3.B.n_candidates"] == 3
+    assert not any(k.startswith(("m3.B.distinct", "m3.B.signal", "m3.B.copies")) for k in n)
+
+
+def test_m3_arm_a_is_graded_only_inside_its_prefilter():
+    n = _m3_numbers({"B": M3Tables("B")}, base=M3Tables("A", prefilter=(1, 3)))
+    assert n["m3.A_prefilter.n_candidates"] == 2
+    assert n["m3.A_prefilter.share_card_b"] == 0.5
+    assert n["m3.B.n_candidates"] == 3
+    assert n["m3.B.candidates_per_b_aro_median"] == 1
