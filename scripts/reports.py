@@ -1181,30 +1181,38 @@ def _m3_vectors(t, org: str, ab: str) -> pd.DataFrame | None:
     return pd.DataFrame({"vector": vector, "copies": copies[vector]})
 
 
-def _m3_compare(auc: pd.DataFrame, a: str, b: str, put, n_boot: int) -> None:
-    if a not in auc or b not in auc:
+M3_METRICS = {"roc_auc": ("", "lineage-aware ROC-AUC"),
+              "balanced_accuracy": (".ba", "lineage-aware balanced accuracy"),
+              "pr_auc": (".pr_auc", "lineage-aware PR-AUC")}
+
+
+def _m3_compare(scores: pd.DataFrame, a: str, b: str, put, n_boot: int,
+                metric: str = "roc_auc") -> None:
+    s_ = scores[scores["metric"] == metric].pivot(index="model", columns="arm", values="value")
+    if a not in s_ or b not in s_:
         return
-    both = auc[[a, b]].dropna()
+    both = s_[[a, b]].dropna()
     if both.empty:
         return
     d = both[a] - both[b]
     s = concordance.sign_test(d)
     pd_ = concordance.paired_difference(d, [i.split("__")[0] for i in d.index], n_boot=n_boot)
-    pre, src = f"m3.compare.{a}__{b}", "cv_metrics"
-    put(f"{pre}.n_pairs", len(both), src, "roc_auc", f"Models both arm {a} and arm {b} evaluate")
-    put(f"{pre}.median_diff", pd_["median"], src, "roc_auc",
-        f"Median paired difference in lineage-aware ROC-AUC, arm {a} minus arm {b}")
-    put(f"{pre}.ci_low", pd_["ci_low"], src, "roc_auc",
+    sub, what = M3_METRICS[metric]
+    pre, src = f"m3.compare.{a}__{b}{sub}", "cv_metrics"
+    put(f"{pre}.n_pairs", len(both), src, metric, f"Models both arm {a} and arm {b} evaluate")
+    put(f"{pre}.median_diff", pd_["median"], src, metric,
+        f"Median paired difference in {what}, arm {a} minus arm {b}")
+    put(f"{pre}.ci_low", pd_["ci_low"], src, metric,
         "Lower 95% bound of that difference, organism-clustered bootstrap")
-    put(f"{pre}.ci_high", pd_["ci_high"], src, "roc_auc",
+    put(f"{pre}.ci_high", pd_["ci_high"], src, metric,
         "Upper 95% bound of that difference, organism-clustered bootstrap")
     put(f"{pre}.n_organisms", pd_["n_clusters"], src, "model_id", "Organisms behind those models")
-    put(f"{pre}.n_a_better", s["n_positive"], src, "roc_auc", f"Models where arm {a} is higher")
-    put(f"{pre}.n_b_better", s["n_negative"], src, "roc_auc", f"Models where arm {b} is higher")
-    put(f"{pre}.n_tied", s["n_tied"], src, "roc_auc", "Models where the arms tie")
+    put(f"{pre}.n_a_better", s["n_positive"], src, metric, f"Models where arm {a} is higher")
+    put(f"{pre}.n_b_better", s["n_negative"], src, metric, f"Models where arm {b} is higher")
+    put(f"{pre}.n_tied", s["n_tied"], src, metric, "Models where the arms tie")
     if s["p_value"] is not None:
-        put(f"{pre}.p", _four_significant(s["p_value"]), src, "roc_auc",
-            f"Two-sided sign test, arm {a} vs arm {b}, ties dropped", digits=None)
+        put(f"{pre}.p", _four_significant(s["p_value"]), src, metric,
+            f"Two-sided sign test of {what}, arm {a} vs arm {b}, ties dropped", digits=None)
 
 
 def _m3_grade_numbers(c: pd.DataFrame, pre: str, what: str, put) -> None:
@@ -1239,24 +1247,126 @@ def _m3_grade_numbers(c: pd.DataFrame, pre: str, what: str, put) -> None:
             "allele_aware_aros", "Largest of those counts")
 
 
+def _prefixed(t, *parts: str) -> Path:
+    """A project path below this configuration's prefix (outputs with no location key)."""
+    prefix = (getattr(t, "config", None) or {}).get("paths_prefix")
+    return PROJECT_ROOT.joinpath(*([prefix] if prefix else []), *parts)
+
+
+# the steps of an arm's run, by what they cost
+M3_COST_STEPS = {"store": ("M3_KMER_STORE",), "budget": ("M3_BUDGET",),
+                 "cv": ("CV_PACKING", "CV_UNITS", "CV_FINAL", "CV_METRICS")}
+
+
+def _m3_cost_numbers(t, arms: dict, put) -> None:
+    """Each arm's cost from the resource report of its last completed run. A run resumed from
+    an earlier one lists the cached tasks too, with their own jobs, so the last run holds all."""
+    runs = _prefixed(t, "runs", "nextflow")
+    if not runs.is_dir():
+        return
+    last: dict[str, Path] = {}
+    for d in sorted(runs.iterdir()):
+        man = d / "run_manifest.json"
+        if not (man.exists() and (d / "resources_summary.json").exists()):
+            continue
+        m = json.loads(man.read_text())
+        overlay = str((m.get("params") or {}).get("config_overlay") or "")
+        ok = (m.get("completed") or {}).get("success")
+        for arm in arms:
+            if ok and (m.get("run") or {}).get("entry") == "M3" and overlay.endswith(f"m3_{arm}.yml"):
+                last[arm] = d
+    for arm, d in last.items():
+        s = json.loads((d / "resources_summary.json").read_text())
+        pre, src = f"m3.{arm}.cost", "resources_summary"
+        put(f"{pre}.core_hours", float(s["total"]["core_hours"]), src, "core_hours",
+            f"Core-hours allocated to arm {arm}'s run (SLURM accounting)")
+        put(f"{pre}.cpu_hours", float(s["total"]["cpu_hours"]), src, "cpu_hours",
+            f"CPU-hours used by arm {arm}'s run (SLURM accounting)")
+        put(f"{pre}.n_tasks", int(s["total"]["tasks"]), src, "tasks", f"Tasks of arm {arm}'s run")
+        for step, procs in M3_COST_STEPS.items():
+            own = {p: v for p, v in s["by_process"].items() if p.split(":")[-1] in procs}
+            if not own:
+                continue
+            put(f"{pre}.{step}.cpu_hours", float(sum(v["cpu_hours"] for v in own.values())), src,
+                "cpu_hours", f"CPU-hours of arm {arm}'s {step} steps")
+            put(f"{pre}.{step}.max_rss_gib", float(max(v["max_rss_gib"] for v in own.values())),
+                src, "max_rss_gib", f"Largest SLURM MaxRSS (GiB) of arm {arm}'s {step} steps")
+            put(f"{pre}.{step}.max_elapsed_h", float(max(v["max_elapsed_h"] for v in own.values())),
+                src, "max_elapsed_h", f"Longest {step} task of arm {arm} (hours)")
+
+
+def _m3_measurement_numbers(t, put) -> None:
+    """The measurements made before the arms ran (scripts/m3_0a, m3_0b, m3_0c)."""
+    tables = _prefixed(t, "results", "tables")
+    homo: dict[str, float] = {}
+    design: set[tuple[int, int]] = set()
+    for p in sorted(tables.glob("m3_0a_summary_*.json")):
+        s = json.loads(p.read_text())
+        org = s["organism"]
+        homo[org] = s["homogeneous_frac"]
+        put(f"m3_0a.{org}.homogeneous_share", float(s["homogeneous_frac"]), "m3_0a_summary",
+            "homogeneous_frac", "Share (0-1) of the tested unitigs whose 31-mers all sit in the "
+            "same sampled genomes")
+        put(f"m3_0a.{org}.max_genomes_apart", int(s["max_pairwise_hamming"]["max"]),
+            "m3_0a_summary", "max_pairwise_hamming",
+            "Most genomes in which two 31-mers of one unitig differ")
+        design.add((int(s["n_unitigs_tested"]), int(s["n_genomes_sampled"])))
+    if len(design) == 1:            # the same sample size in every organism
+        n_units, n_genomes = design.pop()
+        put("m3_0a.n_unitigs_tested", n_units, "m3_0a_summary", "n_unitigs_tested",
+            "Unitigs tested per organism")
+        put("m3_0a.n_genomes_sampled", n_genomes, "m3_0a_summary", "n_genomes_sampled",
+            "Genomes sampled per organism")
+    if homo:
+        put("m3_0a.homogeneous_share_min", float(min(homo.values())), "m3_0a_summary",
+            "homogeneous_frac", "Share (0-1) of homogeneous unitigs, lowest organism")
+        put("m3_0a.homogeneous_share_max", float(max(homo.values())), "m3_0a_summary",
+            "homogeneous_frac", "Share (0-1) of homogeneous unitigs, highest organism")
+    b = tables / "m3_0b_kmer_feature_count.csv"
+    if b.exists():
+        f = pd.read_csv(b)
+        for col, name, unit in (("n_kmer_features", "kmer_features", "k-mer features"),
+                                ("kmer_per_pattern", "kmer_per_pattern", "31-mers per pattern"),
+                                ("kmer_csr_gib", "kmer_matrix_gib",
+                                 "GiB of the k-mer matrix at full width (8 bytes per entry)"),
+                                ("unitig_csr_gib", "unitig_matrix_gib",
+                                 "GiB of the unitig matrix (8 bytes per entry)")):
+            for stat in ("median", "min", "max"):
+                put(f"m3_0b.{name}_{stat}", float(getattr(f[col], stat)()),
+                    "m3_0b_kmer_feature_count", col, f"{unit}, {stat} over models")
+        put("m3_0b.n_models", len(f), "m3_0b_kmer_feature_count", "antibiotic", "Models measured")
+        put("m3_0b.n_models_kmer_matrix_over_100gib", int((f["kmer_csr_gib"] > 100).sum()),
+            "m3_0b_kmer_feature_count", "kmer_csr_gib",
+            "Models whose full k-mer matrix alone exceeds 100 GiB")
+    c = tables / "m3_0c_summary.json"
+    if c.exists():
+        r = json.loads(c.read_text())["collapse_ratio"]
+        for stat in ("median", "q1", "q3", "min", "max"):
+            put(f"m3_0c.collapse_ratio_{stat}", float(r[stat]), "m3_0c_summary", "collapse_ratio",
+                f"Unitigs per pattern of a model, {stat} over models")
+
+
 def _m3_numbers(t: Tables, arms: dict, organisms: list[str], put) -> None:
     dec = t.get("panel_decisions")
     if dec is None or not arms:
         return
     pairs = dec[(dec["decision"] == panel.INCLUDED) & dec["organism"].isin(organisms)]
     top_gain = int((t.config.get("candidates") or {}).get("top_gain") or 50)
-    auc: dict[str, dict[str, float]] = {}
+    scores: list[dict] = []
     chi2: dict[str, dict[str, float]] = {}
     cands: dict[str, list[pd.DataFrame]] = {}
     redundancy: dict[str, list[dict]] = {}
     short: dict[str, int] = {}
+    lengths: dict[str, list] = {}
     for org, ab in zip(pairs["organism"], pairs["antibiotic"], strict=True):
         mid = f"{org}__{ab}"
         for arm, tx in {"A": t, **arms}.items():
             m = tx.json("cv_dir", "metrics.json", org, ab)
             if m is None:
                 continue
-            auc.setdefault(arm, {})[mid] = m["arms"]["lineage_aware"]["roc_auc"]
+            la = m["arms"]["lineage_aware"]
+            scores += [{"model": mid, "arm": arm, "metric": k, "value": la.get(k)}
+                       for k in M3_METRICS]
             g = tx.get("grades_patterns", org, ab)
             pf = tx.get("cpss_prefilter", org, ab)
             if g is None or pf is None:
@@ -1272,6 +1382,9 @@ def _m3_numbers(t: Tables, arms: dict, organisms: list[str], put) -> None:
             cand = tx.get("candidates", org, ab)
             if cand is not None and cand["gain_rank"].notna().sum() < top_gain:
                 short[arm] = short.get(arm, 0) + 1
+            units = tx.get("card_unitigs", org, ab)
+            if units is not None and "length" in units:
+                lengths.setdefault(arm, []).extend(units["length"].dropna().tolist())
             v = _m3_vectors(tx, org, ab)
             if v is not None:
                 k = len(v)
@@ -1283,14 +1396,16 @@ def _m3_numbers(t: Tables, arms: dict, organisms: list[str], put) -> None:
             cands.setdefault(arm, []).append(g)
 
     n_boot = int(t.config["cv"]["n_bootstrap"])
-    a = pd.DataFrame(auc)
-    for arm in a:
-        put(f"m3.{arm}.n_models", int(a[arm].notna().sum()), "cv_metrics", "roc_auc",
-            f"Models arm {arm} evaluates")
-        put(f"m3.{arm}.roc_auc_median", float(a[arm].median()), "cv_metrics", "roc_auc",
-            f"Median lineage-aware ROC-AUC of arm {arm}")
+    sc = pd.DataFrame(scores, columns=["model", "arm", "metric", "value"]).dropna()
+    for (arm, metric), s in sc.groupby(["arm", "metric"]):
+        name = {"roc_auc": "roc_auc", "balanced_accuracy": "ba", "pr_auc": "pr_auc"}[metric]
+        if metric == "roc_auc":
+            put(f"m3.{arm}.n_models", len(s), "cv_metrics", metric, f"Models arm {arm} evaluates")
+        put(f"m3.{arm}.{name}_median", float(s["value"].median()), "cv_metrics", metric,
+            f"Median {M3_METRICS[metric][1]} of arm {arm}")
     for x, y in (("C", "B"), ("B", "A"), ("C", "A")):
-        _m3_compare(a, x, y, put, n_boot)
+        for metric in M3_METRICS:
+            _m3_compare(sc, x, y, put, n_boot, metric)
 
     for arm, per in chi2.items():
         put(f"m3.{arm}.chi2_at_budget_median", float(pd.Series(per).median()), "cpss_prefilter",
@@ -1325,6 +1440,12 @@ def _m3_numbers(t: Tables, arms: dict, organisms: list[str], put) -> None:
         put(f"{pre}.largest_vector_share_max", float(r["largest_share"].max()),
             "model_patterns", "pattern_id", "Share (0-1) of the K features that carry the "
             "most-copied vector, largest over models")
+
+    for arm, ls in lengths.items():
+        put(f"m3.{arm}.candidate_length_median", float(pd.Series(ls).median()), "card_unitigs",
+            "length", f"Length (bp) of the candidates' sequences in arm {arm}, median")
+    _m3_cost_numbers(t, arms, put)
+    _m3_measurement_numbers(t, put)
 
     labels = {"A_prefilter": "arm A inside its χ² prefilter", "B": "arm B", "C": "arm C"}
     for arm, parts in cands.items():

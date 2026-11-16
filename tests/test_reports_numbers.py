@@ -477,9 +477,11 @@ class M3Tables:
 
     def __init__(self, arm, root=None, prefilter=(0, 1, 3)):
         self.arm, self.prefilter = arm, list(prefilter)
+        # the arm's files below root (the matrix, the run and the measurement tables); no
+        # root points nowhere, so the project's own files never leak into a test
         self.config = {"cv": {"n_bootstrap": 200}, "candidates": {"top_gain": 50},
-                       "paths_organism": {"matrix_dir": f"{root}/{{organism}}/{{antibiotic}}"}
-                       if root else {}}
+                       "paths_prefix": str(root or "/nonexistent-m3-test"),
+                       "paths_organism": {"matrix_dir": "{organism}/{antibiotic}"}}
 
     def get(self, tid, organism=None, antibiotic=None, **_):
         if tid == "panel_decisions":
@@ -499,7 +501,8 @@ class M3Tables:
 
     def json(self, location, file, organism=None, antibiotic=None):
         v = M3_AUC[self.arm].get(f"{organism}__{antibiotic}")
-        return None if v is None else {"arms": {"lineage_aware": {"roc_auc": v}}}
+        return None if v is None else {"arms": {"lineage_aware": {
+            "roc_auc": v, "balanced_accuracy": v - 0.1, "pr_auc": None}}}
 
 
 def _m3_numbers(arms, base=None):
@@ -555,3 +558,42 @@ def test_m3_arm_a_is_graded_only_inside_its_prefilter():
     assert n["m3.A_prefilter.share_card_b"] == 0.5
     assert n["m3.B.n_candidates"] == 3
     assert n["m3.B.candidates_per_b_aro_median"] == 1
+
+
+def test_m3_other_metrics_get_their_own_keys_and_a_missing_one_none():
+    n = _m3_numbers({"B": M3Tables("B"), "C": M3Tables("C")})
+    assert n["m3.compare.C__B.ba.median_diff"] == pytest.approx(-0.01)
+    assert n["m3.C.ba_median"] == pytest.approx(0.69)
+    assert not any(".pr_auc" in k for k in n)
+
+
+def test_m3_cost_is_read_from_the_arm_last_completed_run(tmp_path):
+    import json
+    runs = tmp_path / "runs" / "nextflow"
+    for name, arm, ok, core in (("20261101T000000", "C", True, 5.0),
+                                ("20261102T000000", "C", True, 9.0),
+                                ("20261103T000000", "C", False, 99.0),
+                                ("20261104T000000", "B", True, 2.0)):
+        d = runs / name
+        d.mkdir(parents=True)
+        (d / "run_manifest.json").write_text(json.dumps({
+            "run": {"entry": "M3"}, "params": {"config_overlay": f"config/m3_{arm}.yml"},
+            "completed": {"success": ok}}))
+        (d / "resources_summary.json").write_text(json.dumps({
+            "total": {"tasks": 3, "core_hours": core, "cpu_hours": core / 2},
+            "by_process": {"M3:M3_ARM:M3_KMER_STORE": {"cpu_hours": 1.0, "max_rss_gib": 37.0,
+                                                        "max_elapsed_h": 2.5}}}))
+    tables = tmp_path / "results" / "tables"
+    tables.mkdir(parents=True)
+    for org, frac in (("ecoli", 0.98), ("enterococcus_faecium", 0.78)):
+        (tables / f"m3_0a_summary_{org}.json").write_text(json.dumps({
+            "organism": org, "homogeneous_frac": frac, "n_unitigs_tested": 5000,
+            "n_genomes_sampled": 600, "max_pairwise_hamming": {"max": 6}}))
+    base = M3Tables("A", root=tmp_path)
+    n = _m3_numbers({"B": M3Tables("B"), "C": M3Tables("C")}, base=base)
+    assert n["m3.C.cost.core_hours"] == 9.0         # the last completed run, not the failed one
+    assert n["m3.B.cost.core_hours"] == 2.0
+    assert n["m3.C.cost.store.max_rss_gib"] == 37.0
+    assert "m3.C.cost.cv.cpu_hours" not in n
+    assert n["m3_0a.homogeneous_share_min"] == 0.78
+    assert n["m3_0a.n_unitigs_tested"] == 5000
