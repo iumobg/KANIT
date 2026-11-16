@@ -1262,14 +1262,19 @@ def _prefixed(t, *parts: str) -> Path:
     return PROJECT_ROOT.joinpath(*([prefix] if prefix else []), *parts)
 
 
-# the steps of an arm's run, by what they cost
-M3_COST_STEPS = {"store": ("M3_KMER_STORE",), "budget": ("M3_BUDGET",),
-                 "cv": ("CV_PACKING", "CV_UNITS", "CV_FINAL", "CV_METRICS")}
+# the steps of an arm's run, by what they cost. Arm A is the main run: its unitig store and
+# model matrices are its store, and only the steps the arms also run are compared (not the
+# label permutation, the association set, RGI, the external tools or genome QC).
+M3_COST_STEPS = {"store": ("M3_KMER_STORE", "STORE", "MODEL_MATRIX"), "budget": ("M3_BUDGET",),
+                 "cv": ("CV_PACKING", "CV_UNITS", "CV_FINAL", "CV_METRICS"),
+                 "evidence": ("CPSS_PREFILTER", "CPSS_CHUNK", "CPSS_SELECT", "PREVALENCE", "MDA",
+                              "CARD_LAYER", "PYSEER_PREP", "PYSEER_LMM", "PYSEER_POST", "GRADING")}
 
 
 def _m3_cost_numbers(t, arms: dict, put) -> None:
-    """Each arm's cost from the resource report of its last completed run. A run resumed from
-    an earlier one lists the cached tasks too, with their own jobs, so the last run holds all."""
+    """Each arm's cost from the resource report of its last completed run (arm A: the main
+    run's). A run resumed from an earlier one lists the cached tasks too, with their own jobs,
+    so the last run holds all; failed attempts of earlier runs are not counted."""
     runs = _prefixed(t, "runs", "nextflow")
     if not runs.is_dir():
         return
@@ -1281,27 +1286,43 @@ def _m3_cost_numbers(t, arms: dict, put) -> None:
         m = json.loads(man.read_text())
         overlay = str((m.get("params") or {}).get("config_overlay") or "")
         ok = (m.get("completed") or {}).get("success")
+        entry = (m.get("run") or {}).get("entry")
+        if ok and entry == "main" and not overlay:
+            last["A"] = d
         for arm in arms:
-            if ok and (m.get("run") or {}).get("entry") == "M3" and overlay.endswith(f"m3_{arm}.yml"):
+            if ok and entry == "M3" and overlay.endswith(f"m3_{arm}.yml"):
                 last[arm] = d
     for arm, d in last.items():
         s = json.loads((d / "resources_summary.json").read_text())
         pre, src = f"m3.{arm}.cost", "resources_summary"
         put(f"{pre}.core_hours", float(s["total"]["core_hours"]), src, "core_hours",
-            f"Core-hours allocated to arm {arm}'s run (SLURM accounting)")
+            f"Core-hours allocated to arm {arm}'s whole run (SLURM accounting)")
         put(f"{pre}.cpu_hours", float(s["total"]["cpu_hours"]), src, "cpu_hours",
             f"CPU-hours used by arm {arm}'s run (SLURM accounting)")
         put(f"{pre}.n_tasks", int(s["total"]["tasks"]), src, "tasks", f"Tasks of arm {arm}'s run")
+        shared = {"core_hours": 0.0, "cpu_hours": 0.0}
         for step, procs in M3_COST_STEPS.items():
             own = {p: v for p, v in s["by_process"].items() if p.split(":")[-1] in procs}
             if not own:
                 continue
-            put(f"{pre}.{step}.cpu_hours", float(sum(v["cpu_hours"] for v in own.values())), src,
+            for k in shared:
+                shared[k] += sum(v.get(k) or 0.0 for v in own.values())
+            put(f"{pre}.{step}.cpu_hours", float(sum(v.get("cpu_hours") or 0.0
+                                                     for v in own.values())), src,
                 "cpu_hours", f"CPU-hours of arm {arm}'s {step} steps")
-            put(f"{pre}.{step}.max_rss_gib", float(max(v["max_rss_gib"] for v in own.values())),
+            put(f"{pre}.{step}.core_hours", float(sum(v.get("core_hours") or 0.0
+                                                      for v in own.values())), src,
+                "core_hours", f"Core-hours allocated to arm {arm}'s {step} steps")
+            put(f"{pre}.{step}.max_rss_gib", float(max(v.get("max_rss_gib") or 0.0
+                                                       for v in own.values())),
                 src, "max_rss_gib", f"Largest SLURM MaxRSS (GiB) of arm {arm}'s {step} steps")
-            put(f"{pre}.{step}.max_elapsed_h", float(max(v["max_elapsed_h"] for v in own.values())),
+            put(f"{pre}.{step}.max_elapsed_h", float(max(v.get("max_elapsed_h") or 0.0
+                                                         for v in own.values())),
                 src, "max_elapsed_h", f"Longest {step} task of arm {arm} (hours)")
+        for k, what in (("core_hours", "Core-hours allocated"), ("cpu_hours", "CPU-hours used")):
+            put(f"{pre}.shared_steps.{k}", float(shared[k]), src, k,
+                f"{what} by arm {arm}'s store, budget, cross-validation and evidence steps "
+                "(the steps every arm runs)")
 
 
 def _m3_measurement_numbers(t, put) -> None:

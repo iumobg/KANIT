@@ -589,8 +589,28 @@ def test_m3_cost_is_read_from_the_arm_last_completed_run(tmp_path):
         (tables / f"m3_0a_summary_{org}.json").write_text(json.dumps({
             "organism": org, "homogeneous_frac": frac, "n_unitigs_tested": 5000,
             "n_genomes_sampled": 600, "max_pairwise_hamming": {"max": 6}}))
+    d = runs / "20261020T000000"                    # the main run: arm A
+    d.mkdir(parents=True)
+    (d / "run_manifest.json").write_text(json.dumps({
+        "run": {"entry": "main"}, "params": {"config_overlay": None},
+        "completed": {"success": True}}))
+    (d / "resources_summary.json").write_text(json.dumps({
+        "total": {"tasks": 9, "core_hours": 500.0, "cpu_hours": 300.0},
+        "by_process": {"MODELS:CV_UNITS": {"core_hours": 100.0, "cpu_hours": 80.0,
+                                           "max_rss_gib": 90.0, "max_elapsed_h": 3.0},
+                       "EVIDENCE:MDA": {"core_hours": 4.0, "cpu_hours": 1.0,
+                                        "max_rss_gib": 2.0, "max_elapsed_h": 0.5},
+                       "EVIDENCE:MDA_ASSOCIATION": {"core_hours": 4.0, "cpu_hours": 1.0,
+                                                    "max_rss_gib": 2.0, "max_elapsed_h": 0.5},
+                       "EVIDENCE:LP_CHUNKS": {"core_hours": 300.0, "cpu_hours": None,
+                                              "max_rss_gib": None, "max_elapsed_h": None}}}))
     base = M3Tables("A", root=tmp_path)
     n = _m3_numbers({"B": M3Tables("B"), "C": M3Tables("C")}, base=base)
+    # arm A: only the steps the arms also run; the association's MDA and the permutation
+    # test stay out
+    assert n["m3.A.cost.shared_steps.core_hours"] == 104.0
+    assert n["m3.A.cost.evidence.cpu_hours"] == 1.0
+    assert n["m3.A.cost.core_hours"] == 500.0
     assert n["m3.C.cost.core_hours"] == 9.0         # the last completed run, not the failed one
     assert n["m3.B.cost.core_hours"] == 2.0
     assert n["m3.C.cost.store.max_rss_gib"] == 37.0
