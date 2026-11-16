@@ -722,6 +722,7 @@ tables:
       - {name: source_table, type: string, required: true, description: "Table of this contract it is computed from"}
       - {name: column, type: string, description: "Column it is computed from"}
       - {name: description, type: string, description: "What it counts or measures"}
+      - {name: exact, type: string, description: "A float before rounding (empty otherwise), for a text that rounds it again"}
 
   # ---- 19 external validation on CABBAGE (secondary analysis, §14 item 4) -------
   cabbage_isolates:

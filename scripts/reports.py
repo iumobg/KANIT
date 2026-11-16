@@ -51,12 +51,21 @@ def _gram_stain(organism_id):
         return None
 
 
+class _Rounded(float):
+    """A rounded float that remembers the value it was rounded from (the numbers file's
+    exact column)."""
+
+    raw: float
+
+
 def _four_significant(x):
     """Round to four significant digits. A p-value can be far below the fourth
     decimal, where the usual rounding of the numbers file would report it as 0."""
     if x is None or x == 0:
         return x
-    return round(x, -int(math.floor(math.log10(abs(x)))) + 3)
+    r = _Rounded(round(x, -int(math.floor(math.log10(abs(x)))) + 3))
+    r.raw = float(x)
+    return r
 
 
 class Tables:
@@ -1517,10 +1526,14 @@ def numbers(t: Tables, organisms: list[str]) -> pd.DataFrame:
             digits = 6 if description.startswith("Share (0-1)") else 4
         if value is None or (isinstance(value, float) and pd.isna(value)):
             return
-        if isinstance(value, float) and digits is not None:
-            value = round(value, digits)
+        # exact keeps a float before rounding: an article that rounds the value again (to
+        # three decimals, say) would otherwise round twice, and 0.08949 stored as 0.0895
+        # would read 0.090
+        exact = repr(float(getattr(value, "raw", value))) if isinstance(value, float) else ""
+        if isinstance(value, float):
+            value = round(value, digits) if digits is not None else float(value)
         rows.append({"key": key, "value": value, "source_table": table, "column": column,
-                     "description": description})
+                     "description": description, "exact": exact})
 
     min_support = int((t.config.get("unitig") or {}).get("min_support") or 10)
     dec = t.get("panel_decisions")
@@ -1921,7 +1934,8 @@ def numbers(t: Tables, organisms: list[str]) -> pd.DataFrame:
         _kb_numbers(kb, put)
     _cabbage_numbers(t, organisms, put)
     _m3_numbers(t, _m3_arm_tables(t), organisms, put)
-    return pd.DataFrame(rows, columns=["key", "value", "source_table", "column", "description"])
+    return pd.DataFrame(rows, columns=["key", "value", "source_table", "column", "description",
+                                       "exact"])
 
 
 def main():

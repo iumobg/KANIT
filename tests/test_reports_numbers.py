@@ -597,3 +597,17 @@ def test_m3_cost_is_read_from_the_arm_last_completed_run(tmp_path):
     assert "m3.C.cost.cv.cpu_hours" not in n
     assert n["m3_0a.homogeneous_share_min"] == 0.78
     assert n["m3_0a.n_unitigs_tested"] == 5000
+
+
+def test_the_exact_column_keeps_the_value_before_any_rounding(monkeypatch):
+    sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
+    spec = importlib.util.spec_from_file_location("amrtest_reports_exact",
+                                                  PROJECT_ROOT / "scripts" / "reports.py")
+    m = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(m)
+    p = m._four_significant(0.0015503169494868645)
+    assert p == 0.00155 and p.raw == 0.0015503169494868645
+    df = m.numbers(FakeTables(), ["ecoli", "kpneumoniae", "enterobacter_cloacae"])
+    row = df.set_index("key").loc["compare.amrfinderplus_median_diff"]
+    assert float(row["exact"]) == pytest.approx(0.0)       # a float carries its exact value
+    assert df.set_index("key").loc["panel.n_included", "exact"] == ""   # an integer does not
