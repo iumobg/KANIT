@@ -631,3 +631,43 @@ def test_the_exact_column_keeps_the_value_before_any_rounding(monkeypatch):
     row = df.set_index("key").loc["compare.amrfinderplus_median_diff"]
     assert float(row["exact"]) == pytest.approx(0.0)       # a float carries its exact value
     assert df.set_index("key").loc["panel.n_included", "exact"] == ""   # an integer does not
+
+
+def _reports():
+    sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
+    spec = importlib.util.spec_from_file_location("amrtest_reports_ctx",
+                                                  PROJECT_ROOT / "scripts" / "reports.py")
+    m = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(m)
+    return m
+
+
+def test_a_best_hit_gene_is_matched_to_card_and_amrfinderplus_names_in_any_form():
+    m = _reports()
+    idx = m.amr_name_index(["TEM-1", "blaOXA-23", "aac(6')-Ib", "sul1"])
+    assert m.is_amr_name("blaTEM-1", idx) and m.is_amr_name("blaTEM", idx)
+    assert m.is_amr_name("OXA-23", idx) and m.is_amr_name("SUL1", idx)
+    assert m.is_amr_name("aac(6')-Ib", idx)
+    assert not m.is_amr_name("pdxR", idx) and not m.is_amr_name(None, idx)
+    assert not m.is_amr_name("", idx)
+
+
+def test_context_by_grade_counts_only_candidates_without_a_card_hit():
+    m = _reports()
+    graded = pd.DataFrame({"model_id": ["m"] * 4, "pattern_id": [1, 2, 3, 4],
+                           "grade": ["strong_novel", "strong_novel", "weak", "confirmed"],
+                           "card_state": ["no_card_hit", "card_hit_without_b", "no_card_hit", "b"]})
+    ctx = pd.DataFrame({"model_id": ["m"] * 4, "pattern_id": [1, 2, 3, 4],
+                        "unitig_id": list("abcd"), "n_hits": [5, 5, 3, 9],
+                        "plasmid_share": [0.8, 0.9, 0.0, 1.0],
+                        "gene": ["blaTEM-1", None, None, "blaTEM-1"],
+                        "product": ["beta-lactamase", "IS26 family transposase",
+                                    "IS26 family transposase", ""]})
+    rows = {}
+    m._kb_context_grade_numbers(graded, ctx, m.amr_name_index(["TEM-1"]),
+                                lambda k, v, *a, **kw: rows.__setitem__(k, v))
+    assert rows["kb.context.no_card.strong_novel.n_patterns"] == 1      # the CARD hit stays out
+    assert rows["kb.context.no_card.strong_novel.share_amr_name"] == 1.0
+    assert rows["kb.context.no_card.weak.share_mobile"] == 1.0
+    assert rows["kb.context.no_card.weak.share_mostly_plasmid"] == 0.0
+    assert rows["kb.context.confirmed_all.share_amr_name"] == 1.0

@@ -634,7 +634,7 @@ _KB_FROM = """
   JOIN model m ON m.model_id = g.model_id"""
 _KB_WHERE = "\n WHERE g.primary_mode = 1 AND c.route = 'model'"
 KB_GRADED = f"""
-SELECT g.model_id, g.pattern_id, g.grade, m.organism_id,
+SELECT g.model_id, g.pattern_id, g.grade, g.card_state, m.organism_id,
        (SELECT pr.direction FROM prevalence_result pr
          WHERE pr.model_id = g.model_id AND pr.pattern_id = g.pattern_id) AS direction
 {_KB_FROM}{_KB_WHERE}"""
@@ -651,7 +651,7 @@ SELECT DISTINCT g.model_id, g.pattern_id, m.organism_id, a.aro_accession, a.gene
   JOIN aro a ON a.aro_accession = h.aro_accession{_KB_WHERE} AND g.card_state = 'b'"""
 # a pattern's context is that of its longest member with a context row, as in v_novel
 KB_CONTEXT = f"""
-SELECT g.model_id, g.pattern_id, x.unitig_id, x.n_hits, x.plasmid_share, x.gene
+SELECT g.model_id, g.pattern_id, x.unitig_id, x.n_hits, x.plasmid_share, x.gene, x.product
 {_KB_FROM}
   JOIN unitig_context x ON x.organism_id = m.organism_id AND x.unitig_id = (
        SELECT pm.unitig_id FROM pattern_member pm
@@ -660,6 +660,39 @@ SELECT g.model_id, g.pattern_id, x.unitig_id, x.n_hits, x.plasmid_share, x.gene
         WHERE pm.model_id = g.model_id AND pm.pattern_id = g.pattern_id
         ORDER BY u.length DESC, u.unitig_id LIMIT 1){_KB_WHERE}"""
 _PATTERN = ["model_id", "pattern_id"]
+# Names a best nt hit's gene is checked against: the CARD terms RGI hit in these genomes and the
+# AMR element symbols AMRFinderPlus called in them (both stored in the knowledge base).
+KB_AMR_NAMES = """
+SELECT name FROM aro
+ UNION SELECT element_symbol FROM external_call WHERE type = 'AMR'"""
+# A best hit whose product names one of these is on a mobile genetic element (M1, SM10).
+MOBILE_PRODUCT = re.compile(
+    r"transposase|integrase|recombinase|resolvase|insertion (?:sequence|element)|\bIS\d+|"
+    r"\bTn\d+|conjugal transfer|conjugative transfer|relaxase|mobili[sz]ation protein|integron",
+    re.I)
+
+
+def _name_forms(name: str) -> set[str]:
+    """A gene name as it is compared: lower case, with and without the bla prefix and an
+    allele number (blaTEM-1, TEM-1 and tem all meet in tem)."""
+    n = str(name).strip().lower()
+    forms = {n, n.removeprefix("bla")}
+    forms |= {re.sub(r"[-_]\d+[a-z]?$", "", f) for f in list(forms)}
+    return {f for f in forms if len(f) >= 3}
+
+
+def amr_name_index(names) -> set[str]:
+    out: set[str] = set()
+    for n in names:
+        out |= _name_forms(n)
+    return out
+
+
+def is_amr_name(gene, index: set[str]) -> bool:
+    """True when the gene name of a best hit is a CARD or AMRFinderPlus name in some form."""
+    if gene is None or (isinstance(gene, float) and pd.isna(gene)) or not str(gene).strip():
+        return False
+    return bool(_name_forms(gene) & index)
 
 
 def _terms(value) -> list[str]:
@@ -739,6 +772,38 @@ def _kb_context_numbers(graded: pd.DataFrame, ctx: pd.DataFrame, put) -> None:
         for d in ("R", "S"):
             block(f"kb.context.{grade}.{d}", s[s["direction"] == d],
                   f"graded {grade}, direction {d}")
+
+
+def _kb_context_grade_numbers(graded: pd.DataFrame, ctx: pd.DataFrame, index: set[str],
+                              put) -> None:
+    """M1 (added 16.11.2026, exploratory): the nt context of the candidates without a CARD
+    hit, by grade. Does the grade order them as an independent annotation would? Per pattern,
+    the best hit of its longest searched member, as in _kb_context_numbers."""
+    src = "unitig_context"
+    c = graded.merge(ctx.drop_duplicates(_PATTERN), on=_PATTERN, how="left")
+    c = c.assign(amr=c["gene"].map(lambda g: is_amr_name(g, index)),
+                 mobile=c["product"].fillna("").astype(str).str.contains(MOBILE_PRODUCT))
+    groups = [(f"kb.context.no_card.{g}", c[(c["card_state"] == "no_card_hit") &
+                                         (c["grade"] == g)], f"graded {g} without a CARD hit")
+              for g in F.GRADES if g != "confirmed"]
+    groups.append(("kb.context.confirmed_all", c[c["grade"] == "confirmed"],
+                   "graded confirmed (reference)"))
+    for pre, s, what in groups:
+        hit = s[pd.to_numeric(s["n_hits"], errors="coerce") > 0]
+        put(f"{pre}.n_patterns", len(s), "grade", "grade", f"Patterns {what}")
+        put(f"{pre}.n_with_hit", len(hit), src, "n_hits",
+            f"Patterns {what} whose longest searched member has a hit in nt")
+        if not len(hit):
+            continue
+        ps = pd.to_numeric(hit["plasmid_share"], errors="coerce")
+        for key, mask, desc in (
+                ("share_amr_name", hit["amr"], "whose best hit's gene is a CARD or AMRFinderPlus name"),
+                ("share_mobile", hit["mobile"], "whose best hit's product is a mobile-element protein"),
+                ("share_amr_name_or_mobile", hit["amr"] | hit["mobile"], "with either of the two"),
+                ("share_mostly_plasmid", ps >= 0.5, "with at least half of their hits on plasmid records")):
+            put(f"{pre}.{key}", float(mask.mean()), src, "gene" if "amr" in key else
+                "product" if key == "share_mobile" else "plasmid_share",
+                f"Share (0-1) of those patterns {desc}")
 
 
 # The three case studies of the knowledge base paper, chosen by a rule written before their
@@ -1539,6 +1604,7 @@ def _kb_numbers(db: Path, put) -> None:
         graded = pd.read_sql_query(KB_GRADED, con)
         b = pd.read_sql_query(KB_B_AROS, con)
         ctx = pd.read_sql_query(KB_CONTEXT, con)
+        names = [r[0] for r in con.execute(KB_AMR_NAMES).fetchall()]
         _kb_case_numbers(con, ctx, put)
     finally:
         con.close()
@@ -1546,6 +1612,7 @@ def _kb_numbers(db: Path, put) -> None:
         _kb_card_numbers(b, put)
     if len(graded):
         _kb_context_numbers(graded, ctx, put)
+        _kb_context_grade_numbers(graded, ctx, amr_name_index(names), put)
 
 
 def numbers(t: Tables, organisms: list[str]) -> pd.DataFrame:
