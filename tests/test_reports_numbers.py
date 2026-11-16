@@ -277,6 +277,35 @@ def test_the_largest_lineage_share_is_over_the_included_models():
     assert "kpneumoniae.model_largest_lineage_share_median" not in n
 
 
+class LambdaTables(FakeTables):
+    """The same run with each model's pyseer summary; one included model has none."""
+
+    LAMBDA = {("ecoli", "ampicillin"): 0.4, ("ecoli", "ciprofloxacin"): 1.2,
+              ("enterobacter_cloacae", "amikacin"): 0.6}
+
+    def json(self, location, file, organism=None, antibiotic=None):
+        if location == "pyseer_dir" and (organism, antibiotic) in self.LAMBDA:
+            return {"lambda_background": self.LAMBDA[(organism, antibiotic)]}
+        return None
+
+
+def test_the_background_lambda_is_summarised_over_the_included_models():
+    """Median, range and the count below 1 are over the included models with a summary; an
+    excluded pair's summary does not count."""
+    n = _numbers(LambdaTables())          # E. cloacae-amikacin is excluded, K. pneumoniae has none
+    assert n["models.n_lambda_background"] == 2
+    assert n["models.lambda_background_median"] == 0.8
+    assert n["models.lambda_background_min"] == 0.4
+    assert n["models.lambda_background_max"] == 1.2
+    assert n["models.n_lambda_background_below_1"] == 1
+    assert n["ecoli__ampicillin.lambda_background"] == 0.4
+    assert "enterobacter_cloacae__amikacin.lambda_background" not in n
+
+
+def test_no_background_lambda_keys_without_a_summary():
+    assert not any("lambda_background" in k for k in _numbers())
+
+
 def test_qc_genomes_are_summed_over_organisms():
     """Each organism has its own genomes, so the total is a sum, not a union."""
     n = _numbers()

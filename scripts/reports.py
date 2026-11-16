@@ -1777,8 +1777,14 @@ def numbers(t: Tables, organisms: list[str]) -> pd.DataFrame:
     # counts twice), and the models where the association path adds one.
     overlap = {"candidate_only": 0, "both": 0, "association_only": 0}
     n_models_association_only = n_models_overlap = 0
+    lambda_background: dict[str, float] = {}
     for org, ab in zip(included["organism"], included["antibiotic"], strict=True):
         mid = f"{org}__{ab}"
+        lam = (t.json("pyseer_dir", "pyseer_summary.json", org, ab) or {}).get("lambda_background")
+        if lam is not None:
+            lambda_background[mid] = float(lam)
+            put(f"{mid}.lambda_background", float(lam), "pyseer_summary", "lambda_background",
+                "Genomic inflation of the LMM on the background sample of the model's unitigs")
         mg = t.get("model_genomes", org, ab)
         if mg is not None:
             put(f"{mid}.n_genomes", len(mg), "model_genomes", "Genome ID", "Genomes of the model")
@@ -1910,6 +1916,20 @@ def numbers(t: Tables, organisms: list[str]) -> pd.DataFrame:
                     "Smallest of the per-organism median arm gaps")
                 put("models.arm_gap_median_by_organism_max", max(by_organism.values()),
                     "repeat_metrics", "roc_auc", "Largest of the per-organism median arm gaps")
+    # 3.5: a candidate failing the LMM layer is not evidence of no association when the layer is
+    # conservative, which a background lambda below 1 suggests.
+    if lambda_background:
+        lam_s = pd.Series(lambda_background)
+        put("models.lambda_background_median", float(lam_s.median()), "pyseer_summary",
+            "lambda_background", "Median over models of the background genomic inflation")
+        put("models.lambda_background_min", float(lam_s.min()), "pyseer_summary",
+            "lambda_background", "Lowest background genomic inflation of any model")
+        put("models.lambda_background_max", float(lam_s.max()), "pyseer_summary",
+            "lambda_background", "Highest background genomic inflation of any model")
+        put("models.n_lambda_background", len(lam_s), "pyseer_summary", "lambda_background",
+            "Models with a background genomic inflation")
+        put("models.n_lambda_background_below_1", int((lam_s < 1).sum()), "pyseer_summary",
+            "lambda_background", "Models whose background genomic inflation is below 1")
     if genomes_in_models:
         put("all.n_genomes_in_models", len(genomes_in_models), "model_genomes", "Genome ID",
             "Distinct genomes entering at least one model")
