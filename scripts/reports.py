@@ -1376,10 +1376,15 @@ def _m3_measurement_numbers(t, put) -> None:
                 f"Unitigs per pattern of a model, {stat} over models")
 
 
-def _m3_numbers(t: Tables, arms: dict, organisms: list[str], put) -> None:
+def _m3_collect(t: Tables, arms: dict, organisms: list[str]) -> dict | None:
+    """Everything the arms' keys and figures read, per model (None without the panel or an arm):
+    scores (model, arm, metric, value), chi2 (arm -> model -> χ² of the K-th feature),
+    candidates (A_prefilter, B, C -> one row per candidate; copies and vector where the arm's
+    matrix is at hand), redundancy (arm -> one row per model), short (arm -> models whose final
+    model gains on fewer than top_gain features) and lengths (arm -> candidate lengths)."""
     dec = t.get("panel_decisions")
     if dec is None or not arms:
-        return
+        return None
     pairs = dec[(dec["decision"] == panel.INCLUDED) & dec["organism"].isin(organisms)]
     top_gain = int((t.config.get("candidates") or {}).get("top_gain") or 50)
     scores: list[dict] = []
@@ -1420,13 +1425,23 @@ def _m3_numbers(t: Tables, arms: dict, organisms: list[str], put) -> None:
                 k = len(v)
                 n_vec = int(v["vector"].nunique())
                 redundancy.setdefault(arm, []).append(
-                    {"distinct": n_vec, "per_vector": k / n_vec,
+                    {"model": mid, "distinct": n_vec, "per_vector": k / n_vec,
                      "largest_share": float(v["copies"].max()) / k})
                 g = g.join(v, on="pattern_id")
             cands.setdefault(arm, []).append(g)
+    return {"scores": pd.DataFrame(scores, columns=["model", "arm", "metric", "value"]).dropna(),
+            "chi2": chi2, "short": short, "lengths": lengths, "top_gain": top_gain,
+            "candidates": {k: pd.concat(v, ignore_index=True) for k, v in cands.items()},
+            "redundancy": {k: pd.DataFrame(v) for k, v in redundancy.items()}}
 
+
+def _m3_numbers(t: Tables, arms: dict, organisms: list[str], put) -> None:
+    got = _m3_collect(t, arms, organisms)
+    if got is None:
+        return
+    sc, chi2, short, lengths = got["scores"], got["chi2"], got["short"], got["lengths"]
+    top_gain = got["top_gain"]
     n_boot = int(t.config["cv"]["n_bootstrap"])
-    sc = pd.DataFrame(scores, columns=["model", "arm", "metric", "value"]).dropna()
     for (arm, metric), s in sc.groupby(["arm", "metric"]):
         name = {"roc_auc": "roc_auc", "balanced_accuracy": "ba", "pr_auc": "pr_auc"}[metric]
         if metric == "roc_auc":
@@ -1448,8 +1463,7 @@ def _m3_numbers(t: Tables, arms: dict, organisms: list[str], put) -> None:
         put("m3.compare.C__B.n_chi2_at_budget_higher", int((both["C"] > both["B"]).sum()),
             "cpss_prefilter", "chi2", "Models where arm C's K-th χ² is above arm B's")
 
-    for arm, rows in redundancy.items():
-        r = pd.DataFrame(rows)
+    for arm, r in got["redundancy"].items():
         pre = f"m3.{arm}"
         put(f"{pre}.n_models_with_matrix", len(r), "model_patterns", "pattern_id",
             f"Models of arm {arm} whose final model matrix is at hand")
@@ -1478,8 +1492,7 @@ def _m3_numbers(t: Tables, arms: dict, organisms: list[str], put) -> None:
     _m3_measurement_numbers(t, put)
 
     labels = {"A_prefilter": "arm A inside its χ² prefilter", "B": "arm B", "C": "arm C"}
-    for arm, parts in cands.items():
-        c = pd.concat(parts, ignore_index=True)
+    for arm, c in got["candidates"].items():
         _m3_grade_numbers(c, f"m3.{arm}", labels[arm], put)
         if "copies" not in c or c["copies"].isna().any():
             continue
