@@ -171,10 +171,19 @@ if SAYFA == "Genel bakış":
     st.dataframe(oz.style.format({"genom_medyan": "{:.0f}", "roc_auc_medyan": "{:.2f}"}), use_container_width=True)
 
 # --- 2. model --------------------------------------------------------------------------------
-bb = sorgu(DB, """SELECT b.*, n.context_gene, n.context_product, n.context_plasmid_share
-                    FROM v_biomarker b LEFT JOIN v_novel n
-                      ON n.model_id = b.model_id AND n.pattern_id = b.pattern_id
-                   WHERE b.model_id = ? AND b.route = 'model'""", (MODEL,))
+# NCBI bağlamı: örüntünün aranmış en uzun unitig'inin en iyi isabeti (v_novel ile aynı kural, ama
+# yalnız strong_novel değil bütün dereceler için). Gen ve ürün adı, isabet bölgesinde açıklanmış bir
+# CDS ya da gen varsa dolu; yoksa kayıt adı ve plazmid payı yine gösterilir.
+bb = sorgu(DB, """WITH c AS (
+                    SELECT pm.pattern_id, x.gene, x.product, x.best_title, x.plasmid_share,
+                           row_number() OVER (PARTITION BY pm.pattern_id ORDER BY u.length DESC, u.unitig_id) AS rn
+                      FROM pattern_member pm JOIN unitig u ON u.unitig_id = pm.unitig_id
+                      JOIN unitig_context x ON x.unitig_id = pm.unitig_id AND x.organism_id = ?
+                     WHERE pm.model_id = ?)
+                  SELECT b.*, c.gene AS context_gene, c.product AS context_product,
+                         c.best_title AS context_title, c.plasmid_share AS context_plasmid_share
+                    FROM v_biomarker b LEFT JOIN c ON c.pattern_id = b.pattern_id AND c.rn = 1
+                   WHERE b.model_id = ? AND b.route = 'model'""", (org, MODEL, MODEL))
 bb["_d"] = bb.grade.map(derece_sira)
 bb = bb.sort_values(["_d", "pi"], ascending=[True, False])
 
@@ -216,12 +225,15 @@ if SAYFA == "Model":
     tablo = bb[bb.grade.isin(sec_d) & bb.direction.isin(sec_y)]
     goster = tablo[["pattern_id", "grade", "direction", "n_members", "layers_passed", "delta", "pi",
                     "pyseer_p", "card_genes", "card_state_allele_aware", "context_gene", "context_product",
-                    "context_plasmid_share", "gain_rank"]].rename(columns={
+                    "context_plasmid_share", "context_title", "gain_rank"]].rename(columns={
         "pattern_id": "örüntü", "grade": "derece", "direction": "yön", "n_members": "unitig",
         "layers_passed": "geçen katmanlar", "delta": "Δ (R−S)", "pi": "π", "pyseer_p": "pyseer p",
         "card_genes": "CARD genleri", "card_state_allele_aware": "CARD durumu", "context_gene": "NCBI gen",
-        "context_product": "NCBI ürün", "context_plasmid_share": "plazmid payı", "gain_rank": "kazanç sırası"})
-    st.caption("Bir satır seçip 'Biyobelirteç' bölümüne geçince o biyobelirtecin kanıt zinciri açılır.")
+        "context_product": "NCBI ürün", "context_plasmid_share": "plazmid payı",
+        "context_title": "NCBI en yakın kayıt", "gain_rank": "kazanç sırası"})
+    st.caption("Bir satır seçip 'Biyobelirteç' bölümüne geçince o biyobelirtecin kanıt zinciri açılır. "
+               "NCBI gen ve ürün adı yalnız isabet bölgesi kayıtta açıklanmış bir gen içindeyse dolu; "
+               "en yakın kayıt ve plazmid payı her adayda var. NCBI bağlamı kanıt değildir, yanında gösterilir.")
     olay = st.dataframe(goster, hide_index=True, use_container_width=True, on_select="rerun",
                         selection_mode="single-row",
                         column_config={"Δ (R−S)": st.column_config.NumberColumn(format="%.2f"),
