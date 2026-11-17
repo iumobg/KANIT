@@ -127,7 +127,9 @@ for g in DERECELER:
 st.sidebar.caption("Derece bir ilişki söyler, nedensellik söylemez. Yön R: dirençlilerde daha sık; "
                    "S: duyarlılarda daha sık.")
 
-st.title("KANIT: kanıt dereceli AMR biyobelirteç bilgi tabanı")
+st.title("KANIT: Knowledgebase for Antimicrobial Resistance from machine-learned uNitigs with "
+         "Integrated evidence Tiering")
+st.caption("ESKAPEE patojenlerinde makine öğrenmesiyle bulunan AMR biyobelirteçlerinin kanıt dereceli bilgi tabanı")
 # Sekme yerine tek sayfa: gizli sekmelerdeki tablolar genişliğini yanlış ölçüyor.
 SAYFALAR = ["Genel bakış", "Model", "Biyobelirteç", "Ara", "Bağımsız izolatlar (CABBAGE)"]
 SAYFA = st.radio("Bölüm", SAYFALAR, horizontal=True, label_visibility="collapsed", key="sayfa")
