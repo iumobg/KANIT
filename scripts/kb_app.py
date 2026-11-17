@@ -45,7 +45,7 @@ DERECE_ANLAM = {
     "confirmed": "küratörlü bir determinanta uyuyor (b = 1) ve en az iki istatistiksel katman destekliyor",
     "strong_novel": "hiçbir CARD eşleşmesi yok; kararlılık seçimi, karma model ve en az bir katman daha geçiyor",
     "candidate": "kanıt var ama tamamlanmıyor: uyum var ama en çok bir katman, ya da katmanlar var ama uyum "
-                 "yok (gerekçesiyle) ya da kararlılık ile karma model birlikte geçmiyor",
+                 "yok (gerekçesiyle) ya da CARD eşleşmesi yok ama katmanlar strong_novel bileşimini sağlamıyor",
     "weak": "uyum yok ve tam olarak bir katman geçiyor",
     "none": "hiçbir katman geçmiyor; modelin önem sıralamasından başka kanıt yok"}
 ARAC_AD = {"amrfinderplus": "AMRFinderPlus", "resfinder": "ResFinder", "rgi_all": "RGI (bütün eşleşmeler)",
