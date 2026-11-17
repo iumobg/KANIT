@@ -25,7 +25,7 @@ import altair as alt
 import pandas as pd
 import streamlit as st
 
-st.set_page_config(page_title="KANIT", page_icon="🧬", layout="wide")
+st.set_page_config(page_title="KANIT", layout="wide")
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 _ap = argparse.ArgumentParser()
@@ -102,7 +102,7 @@ def cabbage(results: str) -> tuple[pd.DataFrame, pd.DataFrame]:
 
 
 # --- kenar çubuğu ----------------------------------------------------------------------------
-st.sidebar.title("🧬 KANIT")
+st.sidebar.title("KANIT")
 db = Path(st.sidebar.text_input("Veritabanı (kanit.sqlite)", ARGS.db))
 if not db.exists():
     st.error(f"Veritabanı bulunamadı: {db}")
@@ -121,7 +121,8 @@ ab = st.sidebar.selectbox("Antibiyotik", abler, format_func=ab_ad)
 MODEL = f"{org}__{ab}"
 st.sidebar.markdown("**Dereceler**")
 for g in DERECELER:
-    st.sidebar.markdown(f"<span style='color:{DERECE_RENK[g]}'>■</span> `{g}`: {DERECE_ANLAM[g]}",
+    st.sidebar.markdown(f"<span style='display:inline-block;width:0.7em;height:0.7em;margin-right:0.3em;"
+                        f"background:{DERECE_RENK[g]}'></span>`{g}`: {DERECE_ANLAM[g]}",
                         unsafe_allow_html=True)
 st.sidebar.caption("Derece bir ilişki söyler, nedensellik söylemez. Yön R: dirençlilerde daha sık; "
                    "S: duyarlılarda daha sık.")
@@ -268,7 +269,7 @@ if SAYFA == "Biyobelirteç":
                    FROM cpss_result WHERE model_id = ? AND pattern_id = ?
             UNION ALL SELECT 'doğrusal karma model (β)', printf('%.3f', beta), printf('p = %.1e', lrt_p), passes
                    FROM pyseer_result WHERE model_id = ? AND pattern_id = ?""", (MODEL, int(pid)) * 4)
-        zincir["sonuç"] = zincir.passes.map({1: "✅ geçti", 0: "❌ geçmedi"}).fillna("— sınanmadı")
+        zincir["sonuç"] = zincir.passes.map({1: "geçti", 0: "geçmedi"}).fillna("sınanmadı")
         c1, c2 = st.columns([3, 2])
         c1.markdown("**İstatistiksel kanıt katmanları**")
         c1.table(zincir[["katman", "değer", "anlamlılık", "sonuç"]].set_index("katman"))
