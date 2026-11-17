@@ -796,13 +796,18 @@ def _kb_context_grade_numbers(graded: pd.DataFrame, ctx: pd.DataFrame, index: se
         if not len(hit):
             continue
         ps = pd.to_numeric(hit["plasmid_share"], errors="coerce")
+        # A gene or product name exists only when the hit lies in a gene the nt record annotates;
+        # the name shares below count the unnamed hits in their denominator.
+        named = (hit["gene"].fillna("").astype(str).str.strip().ne("")
+                 | hit["product"].fillna("").astype(str).str.strip().ne(""))
         for key, mask, desc in (
+                ("share_named", named, "whose best hit lies in a gene the record annotates (gene or product name)"),
                 ("share_amr_name", hit["amr"], "whose best hit's gene is a CARD or AMRFinderPlus name"),
                 ("share_mobile", hit["mobile"], "whose best hit's product is a mobile-element protein"),
                 ("share_amr_name_or_mobile", hit["amr"] | hit["mobile"], "with either of the two"),
                 ("share_mostly_plasmid", ps >= 0.5, "with at least half of their hits on plasmid records")):
-            put(f"{pre}.{key}", float(mask.mean()), src, "gene" if "amr" in key else
-                "product" if key == "share_mobile" else "plasmid_share",
+            put(f"{pre}.{key}", float(mask.mean()), src, "gene" if key in ("share_named", "share_amr_name",
+                "share_amr_name_or_mobile") else "product" if key == "share_mobile" else "plasmid_share",
                 f"Share (0-1) of those patterns {desc}")
 
 

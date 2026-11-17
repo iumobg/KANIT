@@ -700,3 +700,20 @@ def test_context_by_grade_counts_only_candidates_without_a_card_hit():
     assert rows["kb.context.no_card.weak.share_mobile"] == 1.0
     assert rows["kb.context.no_card.weak.share_mostly_plasmid"] == 0.0
     assert rows["kb.context.confirmed_all.share_amr_name"] == 1.0
+    # pattern 4 has a gene but an empty product, pattern 3 a product but no gene: both are named
+    assert rows["kb.context.confirmed_all.share_named"] == 1.0
+    assert rows["kb.context.no_card.weak.share_named"] == 1.0
+
+
+def test_a_hit_without_gene_or_product_counts_as_unnamed():
+    m = _reports()
+    graded = pd.DataFrame({"model_id": ["m"] * 2, "pattern_id": [1, 2], "grade": ["strong_novel"] * 2,
+                           "card_state": ["no_card_hit"] * 2})
+    ctx = pd.DataFrame({"model_id": ["m"] * 2, "pattern_id": [1, 2], "unitig_id": list("ab"),
+                        "n_hits": [4, 4], "plasmid_share": [1.0, 0.0],
+                        "gene": ["blaTEM-1", None], "product": [None, "  "]})
+    rows = {}
+    m._kb_context_grade_numbers(graded, ctx, m.amr_name_index(["TEM-1"]),
+                                lambda k, v, *a, **kw: rows.__setitem__(k, v))
+    assert rows["kb.context.no_card.strong_novel.share_named"] == 0.5
+    assert rows["kb.context.no_card.strong_novel.share_amr_name"] == 0.5   # unnamed hits stay in the denominator
