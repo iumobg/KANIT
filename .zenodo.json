@@ -1,11 +1,11 @@
 {
   "title": "KANIT: an evidence-graded knowledge base of antimicrobial resistance biomarkers in the ESKAPEE pathogens",
-  "upload_type": "dataset",
+  "upload_type": "software",
   "access_right": "open",
-  "license": "cc-by-4.0",
+  "license": "MIT",
   "version": "1.0.0",
   "language": "eng",
-  "description": "<p>KANIT is a knowledge base of genomic biomarkers associated with antimicrobial resistance in the ESKAPEE pathogens. The biomarkers are unitigs that gradient-boosted models select under lineage-aware cross-validation. Each biomarker is examined by independent lines of evidence, which a fixed rule combines into one evidence grade. A grade states association with resistance, not that the biomarker causes it.</p>",
+  "description": "<p>The workflow that builds KANIT, a knowledge base of genomic biomarkers associated with antimicrobial resistance in the ESKAPEE pathogens. Gradient-boosted models predict laboratory resistance phenotypes from unitigs under lineage-aware cross-validation. Each candidate biomarker is graded by a fixed rule that combines concordance with a curated determinant in CARD with four statistical lines of evidence: differential prevalence, permutation importance, stability selection and a linear mixed model. A grade states an association with the phenotype, not that the biomarker causes resistance.</p><p>This record archives the source code (Nextflow workflow, Python steps, container definitions and tests). The knowledge base itself is deposited as a separate data record.</p>",
   "keywords": [
     "antimicrobial resistance",
     "machine learning",
@@ -18,7 +18,7 @@
     "knowledge base",
     "evidence grading",
     "ESKAPEE",
-    "FAIR",
+    "Nextflow",
     "reproducible research"
   ],
   "creators": [
@@ -26,13 +26,5 @@
       "name": "Demirbaş, Eren"
     }
   ],
-  "related_identifiers": [
-    {
-      "identifier": "https://github.com/iumobg/KANIT",
-      "relation": "isSupplementTo",
-      "resource_type": "software",
-      "scheme": "url"
-    }
-  ],
-  "notes": "Counts and tool versions are not restated here; read them from the deposited database itself, which is authoritative. Software released under the MIT License; this data record under CC-BY-4.0."
+  "notes": "Tool and database versions of the analysis are recorded in each run manifest and in the knowledge base."
 }

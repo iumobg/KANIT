@@ -1,33 +1,28 @@
-# Test Suite
+# Tests
 
-A layered safety net so you can validate the pipeline in **seconds/minutes**
-instead of rerunning the full multi-day job. None of the 9 numbered scripts are
-modified — the suite is purely additive.
+The tests check the workflow in seconds or minutes, without rerunning the analysis.
 
 ## Layers
 
 | Layer | Marker | Speed | What it catches |
 |-------|--------|-------|-----------------|
-| **Smoke** | `smoke` | seconds | Syntax / import / config-wiring / unresolved-path breakage in every script |
-| **Unit** | `unit` | seconds | Logic regressions in the bug-prone pure functions (R/S counting, BLAST tiers, √p colsample, bootstrap CI, threshold, chunking, registry, path resolution) |
+| **Smoke** | `smoke` | seconds | Syntax, import, configuration and path errors in every step script |
+| **Unit** | `unit` | seconds | Regressions in the pure functions: phenotype counting, lineage-aware folds, the evidence layers, CARD concordance, grading, the knowledge base and its package, the registries and path resolution |
+| **Workflow stub** | — | minutes | The wiring of every workflow entry with stub tasks (`tests/test_workflow_stub.py`; opt-in, needs Nextflow 25.04 or later) |
 
 ## How to run
 
 ```bash
-# Fast feedback — default. Runs unit + smoke, NEVER touches your config.
-pytest
-
-# Just one layer
-pytest -m unit
+pytest                 # unit and smoke tests (default)
+pytest -m unit         # one layer
 pytest -m smoke
+make stub              # the workflow with stub tasks
 ```
 
-`pytest` defaults to `-m "not integration and not slow"` (see `pytest.ini`), so
-heavy tests are **opt-in only**.
+`pytest` defaults to `-m "not integration and not slow"` (see `pytest.ini`), so heavy tests
+are opt-in.
 
 ## Environments
 
-In an environment without `xgboost`/`optuna` (e.g. CI lint box), the
-xgboost-dependent unit tests **skip gracefully**; smoke + the remaining unit tests
-still run. In your real training environment
-everything runs.
+In an environment without `xgboost` or `optuna`, the tests that need them are skipped; the
+smoke tests and the remaining unit tests still run.

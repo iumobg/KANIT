@@ -21,7 +21,7 @@ license = { file = "LICENSE" }
 authors = [{ name = "Eren Demirbaş", email = "eren0demirbas@gmail.com" }]
 keywords = ["antimicrobial-resistance", "machine-learning", "unitig", "bioinformatics", "xgboost", "FAIR"]
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3.10",
@@ -72,11 +72,8 @@ include = ["lib*"]
 [tool.ruff]
 line-length = 100
 target-version = "py310"
-# docs/yazim_skill is a verbatim backup of the writing skill, copied over from the live
-# one (see its README): fixes made here would be overwritten on the next copy.
 extend-exclude = [
     "bin", "archive", "backup", "tez", "data", "results", "logs", "runs", "work",
-    "docs/yazim_skill",
 ]
 
 [tool.ruff.lint]
