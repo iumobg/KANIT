@@ -560,6 +560,40 @@ def _permutation_sensitivity(ev: pd.DataFrame, flagged: list[str], put) -> None:
                 layer, f"Candidates of this flagged model passing the {layer} layer")
 
 
+def _cpss_split_numbers(mid: str, cpss: pd.DataFrame, n_fits: int, cards: list,
+                        grades: list[pd.DataFrame], put) -> None:
+    """Why a model has no stable pattern (H1): the ARO behind the most patterns the
+    stability selection picked, how often its patterns were picked and the grade they got.
+    When the signal is spread over near-identical patterns of one determinant, each fit takes
+    a few of them and no single one reaches the threshold. Only graded patterns carry a CARD
+    annotation, so the count is a lower bound."""
+    card = pd.concat([c for c in cards if c is not None and "allele_aware_aros" in c],
+                     ignore_index=True).drop_duplicates("pattern_id")
+    if card.empty:
+        return
+    sel = cpss[pd.to_numeric(cpss["n_selected"], errors="coerce").fillna(0) > 0]
+    e = sel.merge(card[["pattern_id", "allele_aware_aros"]], on="pattern_id", how="inner")
+    e = e.assign(aro=e["allele_aware_aros"].fillna("").astype(str).str.split(";")).explode("aro")
+    e = e[e["aro"] != ""]
+    if e.empty:
+        return
+    aro = e.groupby("aro")["pattern_id"].nunique().idxmax()
+    pats = e[e["aro"] == aro].drop_duplicates("pattern_id")
+    what = f"selected patterns annotated with ARO:{aro}, the ARO behind the most selected patterns"
+    put(f"{mid}.cpss_split.n_patterns", len(pats), "cpss_patterns", "n_selected",
+        f"Number of {what}")
+    put(f"{mid}.cpss_split.selections_per_fit", float(pats["n_selected"].sum() / n_fits),
+        "cpss_patterns", "n_selected", f"Of the {what}: selected per fit, mean over the fits")
+    put(f"{mid}.cpss_split.max_pi", float(pats["pi"].max()), "cpss_patterns", "pi",
+        f"Highest selection frequency among the {what}")
+    g = pd.concat([x[["pattern_id", "grade"]] for x in grades if "grade" in x],
+                  ignore_index=True).drop_duplicates("pattern_id") if grades else pd.DataFrame()
+    if not g.empty:
+        put(f"{mid}.cpss_split.n_confirmed",
+            int(g[g["pattern_id"].isin(pats["pattern_id"])]["grade"].eq("confirmed").sum()),
+            "grades_patterns", "grade", f"Of the {what}: graded confirmed, primary mode")
+
+
 def _b_aros(units: pd.DataFrame | None) -> set[str]:
     """AROs behind b = 1 of a path's unitigs, primary mode: the determinants it recovered."""
     if units is None or "allele_aware_state" not in units:
@@ -1827,6 +1861,22 @@ def numbers(t: Tables, organisms: list[str]) -> pd.DataFrame:
                 "Highest selection frequency the stability selection reached")
             put(f"{mid}.n_patterns_cpss_pi_positive", int((pi > 0).sum()), "cpss_patterns", "pi",
                 "Patterns the stability selection picked at least once")
+            summ = t.json("cpss_dir", "cpss_summary.json", org, ab) or {}
+            if summ.get("n_fits") and "n_selected" in cpss:
+                n_fits = int(summ["n_fits"])
+                sel = pd.to_numeric(cpss["n_selected"], errors="coerce").fillna(0)
+                put(f"{mid}.cpss_selections_per_fit", float(sel.sum() / n_fits), "cpss_patterns",
+                    "n_selected", "Patterns each stability-selection fit selects, mean over the fits")
+                if summ.get("n_trees") is not None:
+                    put(f"{mid}.cpss_n_trees", int(summ["n_trees"]), "cpss_summary", "n_trees",
+                        "Trees of each stability-selection fit")
+                if float(pi.max()) < float(t.config["cpss"]["pi_threshold"]):
+                    aro = {"dtype": {"allele_aware_aros": str}}
+                    _cpss_split_numbers(
+                        mid, cpss, n_fits,
+                        [t.get(x, org, ab, **aro) for x in ("card_patterns", "association_card_patterns")],
+                        [g for g in (grades, t.get("association_grades_patterns", org, ab)) if g is not None],
+                        put)
         cands = t.get("candidates", org, ab)
         if grades is not None and cands is not None and "grade" in grades:
             e = grades.merge(cands, on="pattern_id", how="left")
