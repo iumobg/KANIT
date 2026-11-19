@@ -1,4 +1,4 @@
-# Makale 3, arm C: canonical 31-mers of the organism's k-mer store, not collapsed,
+# Unitig–k-mer comparison, arm C: canonical 31-mers of the organism's k-mer store, not collapsed,
 # K = 5000 features chosen by χ² inside every training set (scripts/m3_budget.py,
 # lib/budget.py). Arm A is the main run and stays untouched: every result of this arm is
 # written under m3/C/, and arm A's matrices and folds are read through source_*.

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Makale 3, arm C — the organism's k-mer store (lib/kmers.py).
+"""Unitig–k-mer comparison, arm C — the organism's k-mer store (lib/kmers.py).
 
 Reads the unitig sequences of the full presence table (unitig_store_dir/call/unitigs.rtab),
 counts in the assemblies the genomes carrying each of their canonical k-mers and writes

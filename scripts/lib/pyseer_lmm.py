@@ -74,7 +74,7 @@ def write_inputs(mm, out_dir, tested, *, every: int, background_max: int,
     """phenotypes.tsv, tested.Rtab, background.Rtab and kinship.tsv for pyseer.
 
     ``structure`` is the model matrix the kinship and the background patterns come from,
-    by default ``mm``. Makale 3's budgeted arms pass arm A's: their own matrix holds only
+    by default ``mm``. The budgeted arms of the unitig–k-mer comparison pass arm A's: their own matrix holds only
     the K chosen features, too few and too label-bound to describe population structure."""
     structure = mm if structure is None else structure
     if list(structure.genomes["Genome ID"].astype(str)) != list(mm.genomes["Genome ID"].astype(str)):

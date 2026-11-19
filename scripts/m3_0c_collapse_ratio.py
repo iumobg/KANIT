@@ -2,7 +2,7 @@
 """M3-0c — how much of the unitig matrix's reduction is the frequency filter and how
 much is the pattern collapse?
 
-Makale 3 (makale/plan_ED_m3_frekans_suzgeci_261026.md §5) needs the two reductions
+The unitig–k-mer comparison needs the two reductions
 separated, because only the first one is shared with the k-mer arm:
 
   unitigs seen  --[frequency filter, min_support]-->  store unitigs

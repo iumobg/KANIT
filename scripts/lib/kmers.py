@@ -1,4 +1,4 @@
-"""Canonical k-mers and the organism k-mer store (Makale 3, arm C).
+"""Canonical k-mers and the organism k-mer store (unitig–k-mer comparison, arm C).
 
 The k-mer store has the format of the unitig store (lib/matrix_store.py), so that every
 step reading a store reads it unchanged; a "unitig" of this store is one canonical k-mer:

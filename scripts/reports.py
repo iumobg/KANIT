@@ -1258,7 +1258,7 @@ def _cabbage_numbers(t: Tables, organisms: list[str], put) -> None:
             "Upper 95% bound, organism-clustered bootstrap")
 
 
-# ---- Makale 3: arms B and C under a feature budget ---------------------------------------
+# ---- Unitig–k-mer comparison: arms B and C under a feature budget ---------------------------------------
 # Arm A is the main run. Arms B (arm A's unitig patterns) and C (the organism's raw canonical
 # 31-mers, not collapsed) keep the K features with the largest χ² inside every training set
 # and are graded as arm A is (config/m3_B.yml, config/m3_C.yml). An arm's outputs sit where its

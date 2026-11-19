@@ -12,7 +12,7 @@
  *   -entry KB         the knowledge base, the hypothesis tests and its release package
  *   -entry CABBAGE    external validation of the final models on CABBAGE isolates
  *                     (secondary analysis, protocol §14 item 4; after the primary run)
- *   -entry M3         Makale 3, arm B or C (--config_overlay config/m3_B.yml or
+ *   -entry M3         unitig–k-mer comparison, arm B or C (--config_overlay config/m3_B.yml or
  *                     config/m3_C.yml): the main run's pairs with a feature budget of
  *                     unitig patterns or k-mers, written under m3/<arm>/
  *
@@ -181,9 +181,9 @@ workflow KB {
     FINISH(KB_PACKAGE.out.done.collect(), 'KB')
 }
 
-// Makale 3, arm B or C (subworkflows/local/m3.nf): the included pairs of the main run's
+// Unitig–k-mer comparison, arm B or C (subworkflows/local/m3.nf): the included pairs of the main run's
 // panel, read from its decisions (a stub run reads --stub_panel). It ends with SLURM's
-// accounting and the resource report of the run (the arm's cost, Makale 3 §3.5), not with
+// accounting and the resource report of the run (the arm's cost), not with
 // FINISH: the reports, the output contract and the backup are the main run's.
 workflow M3 {
     def cfg = kanitConfig()

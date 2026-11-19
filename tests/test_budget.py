@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Feature budget of Makale 3 (lib.budget, m3_budget.py, the 04 hook) on synthetic data."""
+"""Feature budget of the unitig–k-mer comparison (lib.budget, m3_budget.py, the 04 hook) on synthetic data."""
 import json
 import sys
 from pathlib import Path

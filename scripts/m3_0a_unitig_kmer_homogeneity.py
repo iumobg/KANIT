@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """M3-0a — do all 31-mers of a unitig carry the same presence/absence vector?
 
-This is the pivot of Makale 3's design (makale/plan_ED_m3_frekans_suzgeci_261026.md
-§4.2, §5). Our frequency filter is defined on the 31-mer; the unitig arm applies it
+This is the pivot of the unitig–k-mer comparison's design. Our frequency filter is defined on the 31-mer; the unitig arm applies it
 to whole unitigs. The two are the same filter only if a unitig is homogeneous, i.e.
 every k-mer inside it appears in exactly the genomes the unitig appears in.
 

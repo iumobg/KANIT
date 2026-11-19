@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Makale 3, arms B and C — the feature budget of one panel pair (lib/budget.py).
+"""Unitig–k-mer comparison, arms B and C — the feature budget of one panel pair (lib/budget.py).
 
 Chooses the K features with the largest χ² in every training set of the model (each
 outer fold of arm A's cross-validation design, then all genomes) and writes:
@@ -128,7 +128,7 @@ def run(organism: str, antibiotic: str, config: dict) -> dict:
 def main():
     config = load_config()
     default_org, default_ab = get_target(config=config)
-    ap = argparse.ArgumentParser(description="Feature budget of one panel pair (Makale 3).")
+    ap = argparse.ArgumentParser(description="Feature budget of one panel pair (unitig–k-mer comparison).")
     ap.add_argument("--organism", default=default_org)
     ap.add_argument("--antibiotic", default=default_ab)
     args = ap.parse_args()

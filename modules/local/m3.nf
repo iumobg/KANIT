@@ -1,4 +1,4 @@
-// Makale 3, arms B and C: the organism's k-mer store (arm C) and the feature budget of
+// Unitig–k-mer comparison, arms B and C: the organism's k-mer store (arm C) and the feature budget of
 // one panel pair (scripts/m3_kmer_store.py, scripts/m3_budget.py).
 
 include { py; receipt; stubReceipt; kanitConfig } from './common'

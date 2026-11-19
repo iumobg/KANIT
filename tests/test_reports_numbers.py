@@ -483,7 +483,7 @@ def test_direction_counts_every_candidate_and_the_strong_novel_ones():
     assert n["all.n_strong_novel_direction_r"] == 0 and n["all.n_strong_novel_direction_s"] == 1
 
 
-# ---- Makale 3 (arms B and C) -----------------------------------------------------------
+# ---- Unitig–k-mer comparison (arms B and C) -----------------------------------------------------------
 # Three included models; enterobacter_cloacae is excluded and must not count.
 M3_AUC = {"A": {"ecoli__ampicillin": 0.90, "ecoli__ciprofloxacin": 0.80,
                 "kpneumoniae__meropenem": 0.70},

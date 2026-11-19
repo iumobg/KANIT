@@ -217,7 +217,7 @@ def test_python_output_is_unbuffered_on_truba(tmp_path):
 
 @pytest.mark.parametrize("arm", ["B", "C"])
 def test_m3_entry(tmp_path, arm):
-    """Makale 3: every included pair of the main run's panel once, from the budget to the
+    """Unitig–k-mer comparison: every included pair of the main run's panel once, from the budget to the
     grades; the k-mer store once per organism in arm C only; nothing of RGI, the label
     permutation test or the association set; the run's accounting at the end."""
     panel = PROJECT_ROOT / "tests" / "data" / "stub_panel_decisions.csv"

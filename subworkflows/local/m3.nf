@@ -1,4 +1,4 @@
-// Makale 3, arm B or C (--config_overlay config/m3_B.yml or config/m3_C.yml). Arm A, the
+// Unitig–k-mer comparison, arm B or C (--config_overlay config/m3_B.yml or config/m3_C.yml). Arm A, the
 // main run, is the source and stays untouched: the budget reads its model matrices and
 // folds, the CARD layer its RGI calls and pyseer its population structure (their files
 // are staged as dependencies, so that a change in arm A reruns the arm).

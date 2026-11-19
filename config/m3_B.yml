@@ -1,4 +1,4 @@
-# Makale 3, arm B: unitig patterns of arm A's model matrices,
+# Unitig–k-mer comparison, arm B: unitig patterns of arm A's model matrices,
 # K = 5000 features chosen by χ² inside every training set (scripts/m3_budget.py,
 # lib/budget.py). Arm A is the main run and stays untouched: every result of this arm is
 # written under m3/B/, and arm A's matrices and folds are read through source_*.

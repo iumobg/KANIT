@@ -111,7 +111,7 @@ def main():
         print("Model not evaluable (see 04's seeds.csv): no pyseer.")
         sys.exit(folds.NOT_EVALUABLE)
     if args.command in ("prep", "all"):
-        # Makale 3's budgeted arms: population structure from arm A's full matrix
+        # The budgeted arms of the unitig–k-mer comparison: population structure from arm A's full matrix
         structure = ModelMatrix(path("source_matrix_dir")) if config.get("m3") else None
         info = prep(ModelMatrix(path("matrix_dir")), out_dir, cfg,
                     prefilter_file=path("cpss_dir") / "prefilter.csv",

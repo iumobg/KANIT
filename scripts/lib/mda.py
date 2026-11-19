@@ -55,7 +55,7 @@ class FoldModel:
     used: np.ndarray            # patterns the model splits on
     csr: sp.csr_matrix          # test genomes × all patterns; the used ones stored
     # the used patterns' ids in the model matrix whose patterns are permuted, when the fold
-    # model saw other columns (Makale 3's budget, lib/budget.py); -1: not among them
+    # model saw other columns (the feature budget, lib/budget.py); -1: not among them
     ids: np.ndarray | None = None
 
     @property

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """M3-0b — how wide and how heavy would the k-mer arm be?
 
-Makale 3 (makale/plan_ED_m3_frekans_suzgeci_261026.md §5) needs the k-mer arm's
+The unitig–k-mer comparison needs the k-mer arm's
 dimensionality before any code is written. It is already determined by the finished
 unitig run: in a compacted de Bruijn graph every canonical k-mer sits in exactly one
 unitig, so the number of distinct 31-mers in a set of unitigs is

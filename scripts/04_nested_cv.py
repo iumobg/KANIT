@@ -130,7 +130,7 @@ def _design_evaluable(out_dir) -> bool:
 
 def unit_matrix(mm, arm, repeat, fold):
     """The matrix an outer fold trains on: the model matrix or, under a feature budget
-    (Makale 3, arms B and C; lib/budget.py), the features its own training set chose."""
+    (unitig–k-mer comparison, arms B and C; lib/budget.py), the features its own training set chose."""
     if budget.has_budget(mm.dir):
         return budget.unit_matrix(mm.dir, folds.unit_name(arm, repeat, fold))
     return mm

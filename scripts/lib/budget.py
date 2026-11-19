@@ -1,4 +1,4 @@
-"""Feature budget of Makale 3 (arms B and C).
+"""Feature budget of the unitig–k-mer comparison (arms B and C).
 
 A model of arm B or C sees only the ``K`` features with the largest χ² against the label,
 chosen inside each of its training sets: every outer fold's training genomes, and all
