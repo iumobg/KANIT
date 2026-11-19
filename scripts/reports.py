@@ -519,6 +519,13 @@ def _hypothesis_numbers(summary: dict, put, pre: str, label: str = "") -> None:
             for (i, j), key, text in SECONDARY_CELLS:
                 put(f"{pre}.expected.secondary_{key}.{tag}", int(table[i][j]), "h7_determinants",
                     "best_grade", f"{label}Protocol H7, threshold {thr}: {text}")
+            for row, who in ((0, "expected"), (1, "other")):
+                n = int(table[row][0]) + int(table[row][1])
+                if n:
+                    put(f"{pre}.expected.secondary_share_{who}_confirmed.{tag}", int(table[row][0]) / n,
+                        "h7_determinants", "best_grade",
+                        f"Share (0-1) {label}Protocol H7, threshold {thr}: confirmed among the "
+                        f"candidates {'of an expected determinant' if row == 0 else 'with another CARD hit'}")
 
 
 def _flagged_models(lp: pd.DataFrame, models: list[str], alpha: float) -> list[str] | None:
