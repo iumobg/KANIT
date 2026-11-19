@@ -2,7 +2,7 @@
 """Binary concordance / clinical-error metrics for external validation (M13).
 
 Pure, dependency-light functions (scipy only for p-values, with a stdlib
-fallback) shared by ``16_external_concordance.py`` to compare, on the same set of
+fallback) used by ``lib.external`` to compare, on the same set of
 genomes, any two of: our unitig model's calls, AMRFinderPlus/ResFinder genotypic
 calls, and the EUCAST/CLSI phenotype (ground truth).
 

@@ -13,22 +13,14 @@ import pytest
 
 PIPELINE_SCRIPTS = [
     "00a_download_bvbrc.py",
-    "01_data_validation.py",
-    "01b_data_validation.py",
     "02c_lineage_poppunk.py",
     "02d_genome_qc.py",
     "02e_panel.py",
     "03u_unitig_matrix.py",
     "04_nested_cv.py",
-    "06_evaluation.py",
-    "07_explainability.py",
-    "07b_feature_stability.py",
     "08_rgi.py",
-    "08_blast_annotation.py",
     "09_card_layer.py",
-    "09_biological_summary.py",
     "10_prevalence.py",
-    "11_variant_snp_check.py",
     "12_mda.py",
     "12b_label_permutation.py",
     "13_cpss.py",
@@ -55,10 +47,9 @@ def test_script_imports(load_script, script):
 @pytest.mark.smoke
 def test_lib_package_imports():
     """The shared lib package and its public API import cleanly."""
-    from lib import chunking, config, io_utils, registry, run_metadata  # noqa: F401
+    from lib import config, io_utils, registry, run_metadata  # noqa: F401
     assert callable(config.resolve_path)
     assert callable(registry.load_antibiotic_classes)
-    assert callable(chunking.get_y_chunk)
     assert callable(io_utils.run_command)
     assert callable(run_metadata.make_run_id)
 

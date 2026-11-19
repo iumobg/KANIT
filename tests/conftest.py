@@ -40,8 +40,7 @@ def load_script():
 
     Usage:
         def test_x(load_script):
-            mod = load_script("01_data_validation.py")
-            assert mod.validate_dataset_scientific(50, 50)[0] is True
+            mod = load_script("02e_panel.py")
     """
     def _load(filename):
         path = SCRIPTS_DIR / filename

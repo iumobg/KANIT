@@ -134,8 +134,8 @@ def collect_versions(config=None):
     # drifts, and this function would write the stale value into
     # run_metadata.json, so the KB would misreport its own schema.
     try:
-        from lib.kb_schema import KB_SCHEMA_VERSION
-        versions["kb_schema_version"] = KB_SCHEMA_VERSION
+        from lib.knowledge_base import SCHEMA_VERSION
+        versions["kb_schema_version"] = SCHEMA_VERSION
     except Exception:
         versions["kb_schema_version"] = None
     # CARD's version comes from CARD's own card.json, never from a typed config value.

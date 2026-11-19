@@ -4,7 +4,7 @@ Standard logging helper for the pipeline.
 
 The numbered scripts historically use ``print`` for their human-facing progress
 output; this module provides a consistent, timestamped logger for the
-orchestrator (``run_pipeline.py``) and any new code, optionally tee-ing to a
+scripts, optionally tee-ing to a
 file under ``logs/``. Keeping it here makes the logging format a single source
 of truth.
 """

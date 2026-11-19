@@ -10,8 +10,7 @@ held-out AUC honestly answers "can the model predict resistance in a lineage it
 has never seen?".
 
 It is feature-agnostic and out-of-core friendly: it emits **sample-level boolean
-masks** (one per fold) that plug straight into ``lib.xgb_data`` (``row_mask=``),
-the same mechanism 07b already uses. Lineage labels come from PopPUNK (organism-
+masks** (one per fold). Lineage labels come from PopPUNK (organism-
 level, antibiotic-independent — computed once, reused for every antibiotic).
 
 PopPUNK clusters are used AS-IS: every cluster, including singletons, stays its
@@ -87,8 +86,7 @@ def group_kfold_masks(y: np.ndarray, groups: np.ndarray, n_splits: int = 5, *,
 
     With ``stratified`` (default) uses ``StratifiedGroupKFold`` so folds keep
     groups intact AND balance the R/S label; otherwise plain ``GroupKFold``. The
-    masks are sample-level (length == len(y)) and feed ``lib.xgb_data`` row_mask
-    directly, so training/eval stay out-of-core (07b regime).
+    masks are sample-level (length == len(y)).
     """
     from sklearn.model_selection import GroupKFold, StratifiedGroupKFold
 

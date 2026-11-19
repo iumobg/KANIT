@@ -17,33 +17,9 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
 
 from lib import registry, run_metadata  # noqa: E402
-from lib.chunking import get_y_chunk  # noqa: E402
 from lib.config import get_target, load_config, resolve_path  # noqa: E402
 
 
-# ---------------------------------------------------------------------------
-# chunking
-# ---------------------------------------------------------------------------
-def test_get_y_chunk_basic():
-    data = list(range(10))
-    assert get_y_chunk(data, 0, 3, 10) == [0, 1, 2]
-    assert get_y_chunk(data, 1, 3, 10) == [3, 4, 5]
-
-
-def test_get_y_chunk_last_partial():
-    data = list(range(10))
-    # chunk 3 with size 3 -> indices 9..10 clamped to total_len
-    assert get_y_chunk(data, 3, 3, 10) == [9]
-
-
-def test_get_y_chunk_out_of_range():
-    data = list(range(10))
-    assert get_y_chunk(data, 5, 3, 10) == []
-
-
-# ---------------------------------------------------------------------------
-# registry
-# ---------------------------------------------------------------------------
 def test_registry_classes_structure():
     classes = registry.load_antibiotic_classes()
     assert "Aminoglycosides" in classes
@@ -260,42 +236,6 @@ def test_collect_versions_captures_the_science_defining_tools():
     v = run_metadata.collect_versions()
     for tool in ("unitig_caller", "bcalm", "poppunk", "graph_tool", "pyseer"):
         assert tool in v, f"{tool} missing from collect_versions"
-
-
-def test_pipeline_runs_has_tool_version_columns(tmp_path):
-    import sqlite3
-
-    from lib.kb_schema import create_schema
-    c = sqlite3.connect(str(tmp_path / "k.db"))
-    create_schema(c)
-    cols = {r[1] for r in c.execute("PRAGMA table_info(pipeline_runs)")}
-    for col in ("unitig_caller_version", "bcalm_version", "poppunk_version",
-                "graph_tool_version", "blast_version", "pyseer_version"):
-        assert col in cols, f"{col} missing from pipeline_runs"
-    c.close()
-
-
-def test_populate_run_writes_versions_including_pyseer_from_step14(tmp_path):
-    import importlib.util
-    import sqlite3
-
-    from lib.kb_schema import create_schema
-    spec = importlib.util.spec_from_file_location(
-        "pop", PROJECT_ROOT / "scripts" / "populate_database.py")
-    pop = importlib.util.module_from_spec(spec); spec.loader.exec_module(pop)
-
-    c = sqlite3.connect(str(tmp_path / "k.db")); create_schema(c)
-    run_meta = {"run_id": "R1", "versions": {
-        "unitig_caller": "unitig-caller 1.3.2", "bcalm": "bcalm 2.2.3",
-        "poppunk": "poppunk 2.7.8", "graph_tool": "3.0", "blastn": "blastn: 2.17.0+",
-        "xgboost": "3.2.0"}}
-    # pyseer comes from 14's summary, NOT from collect_versions (different container)
-    pop.populate_run(c, "ecoli", "ampicillin", run_meta, "4.0.1", 5,
-                     pyseer_version="pyseer 1.4.1")
-    row = c.execute("""SELECT poppunk_version, graph_tool_version, unitig_caller_version,
-                              pyseer_version FROM pipeline_runs WHERE run_id='R1'""").fetchone()
-    assert row == ("poppunk 2.7.8", "3.0", "unitig-caller 1.3.2", "pyseer 1.4.1")
-    c.close()
 
 
 def test_version_line_passes_over_warnings_and_refuses_errors():

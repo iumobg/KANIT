@@ -38,12 +38,9 @@ tqdm>=4.62.0             # progress bars
 certifi>=2021.10.8       # CA bundle for BV-BRC HTTPS (step 00a) — avoids SSL cert errors
 
 # --- KB interfaces (optional) -----------------------------------------------
-# Streamlit explorer (scripts/kb_app.py, S8/N1) and the REST API (scripts/kb_api.py,
-# S8/S9). Only needed to serve the KB UI/API; the pipeline runs without them.
+# Streamlit explorer of the knowledge base (scripts/kb_app.py). Only needed to browse
+# the knowledge base; the workflow runs without it.
 streamlit>=1.20.0        # scripts/kb_app.py (local KB explorer)
-fastapi>=0.100.0         # scripts/kb_api.py (REST API over kanit.db)
-uvicorn>=0.20.0          # ASGI server for kb_api
-httpx>=0.24.0            # FastAPI TestClient (tests/test_kb_queries.py smoke)
 
 # --- Testing ----------------------------------------------------------------
 pytest>=7.0.0            # tests/ (smoke / unit / integration)

@@ -1,9 +1,7 @@
 # ============================================================================
 # ANTIBIOTIC REGISTRY — single source of truth for antibiotic → class mapping
 # ============================================================================
-# Replaces the ANTIBIOTIC_CLASSES dictionary previously copy-pasted in
-# 01_data_validation.py and 01b_data_validation.py (audit B09/B10).
-# Accessed via scripts/lib/registry.py.
+# The single source of antibiotic classes, accessed via scripts/lib/registry.py.
 #
 # Adding/renaming an antibiotic class = editing this file only. No code change.
 #
@@ -269,16 +267,16 @@ not_single_drugs:
   - ceftriaxone/cefpodoxime
 
 # ============================================================================
-# AMRFinderPlus Class/Subclass -> antibiotic keyword map (M13 concordance;
-# scripts/16_external_concordance.py, audit Issue 9). A genome is genotypic-R
+# AMRFinderPlus Class/Subclass -> antibiotic keyword map (external comparison,
+# scripts/16_external.py, and the expected determinants, scripts/hypotheses.py). A genome is genotypic-R
 # for an antibiotic if any AMR-type AMRFinderPlus row's Class/Subclass tokens
 # intersect this set. Add an antibiotic here (no code change) to include it in
 # the concordance. Note the biology: a narrow BETA-LACTAM (TEM-1) implies
 # ampicillin-R but NOT cefotaxime-R (that needs an ESBL/AmpC -> CEPHALOSPORIN).
 # ============================================================================
 # NOTE (2026-07-07): tokens below cover the 17-model KB panel. They are
-# AMRFinderPlus Class/Subclass approximations — VERIFY against actual AFP output
-# when running M13 (16_external_concordance) on the new antibiotics; refine if a
+# AMRFinderPlus Class/Subclass approximations — verify against actual AFP output
+# when adding antibiotics; refine if a
 # determinant maps too broadly (see the narrow-vs-broad beta-lactam caveat above).
 amrfinder_keywords:
   ampicillin:                    [AMPICILLIN, BETA-LACTAM]
@@ -348,7 +346,7 @@ amrfinder_keywords:
 # ============================================================================
 # DOMINANT RESISTANCE MECHANISM per class — acquired gene vs target-gene SNP.
 # The thesis "acquired vs target-SNP" showcase axis; consumed by
-# populate_database (antibiotics.mechanism_type via lib.registry). For classes
+# lib.registry (class mechanism index). For classes
 # not yet in the KB the value is the literature-dominant style (provisional —
 # refine when that class is actually modelled).
 # ============================================================================
@@ -376,7 +374,7 @@ class_mechanism_type:
 # ============================================================================
 # WHO AWaRe 2023 category per antibiotic (Access / Watch / Reserve). Clinical
 # stewardship context only — NOT an ML class axis (ESKAPEE1.md §3). Consumed by
-# populate_database (antibiotics.who_aware). Antibiotics not listed -> null.
+# build_kb.py (antibiotic.who_aware via lib.registry). Antibiotics not listed -> null.
 # ============================================================================
 who_aware:
   ampicillin: Access
