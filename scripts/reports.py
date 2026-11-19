@@ -357,6 +357,11 @@ def _evidence_numbers(ev: pd.DataFrame, put) -> None:
             put(f"all.n_{g}_outside_top_gain", int((ev["grade"] == g).sum()) - k,
                 "grades_patterns", "grade",
                 f"Patterns graded {g} reaching the candidate set only by stability selection")
+        k = int(top["grade"].isin(("weak", "none")).sum())
+        put("all.n_weak_or_none_in_top_gain", k, "grades_patterns", "grade",
+            "Top-gain patterns graded weak or none: at most one layer supports them")
+        put("all.top_gain_share_weak_or_none", k / nt, "grades_patterns", "grade",
+            "Share (0-1) of the top-gain patterns graded weak or none")
 
     # the grade a candidate reaches without a CARD hit, with one, or with b = 1
     cand = ev[ev["grade"] == "candidate"]
