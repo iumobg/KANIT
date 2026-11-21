@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The report of a workflow run (plan F4.3): one HTML page in the run directory.
+"""The report of a workflow run: one HTML page in the run directory.
 
 It joins what the run directory already holds: the run manifest (run, commit,
 configuration checksums), the completeness matrix and its failures, the resources per
@@ -57,7 +57,6 @@ def report(run_dir: Path) -> Path:
         ("finished", (run.get("completed") or {}).get("at")), ("profile", r.get("profile")),
         ("organisms", ", ".join(r.get("organisms") or [])), ("commit", code.get("commit")),
         ("tracked changes", code.get("dirty")),
-        ("protocol", (run.get("config", {}).get("protocol") or {}).get("version")),
         ("complete", comp.get("complete")),
         ("checks ok", f"{comp.get('percent_ok')}% of {comp.get('applicable')}"),
         ("output files", outs.get("n_files")),

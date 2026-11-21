@@ -1,5 +1,5 @@
 # ============================================================================
-# amr-pyseer.sif — pyseer for KANIT v1.0 (step 14; plan F6, K9)
+# amr-pyseer.sif — pyseer for KANIT v1.0 (step 14; K9)
 # ============================================================================
 # pyseer 1.4.2 needs glmnet_py other than 1.0.1 and 1.0.2, and the only other
 # build (1.0.0) exists for Python 3.8 at the newest. So pyseer keeps Python 3.8 in a

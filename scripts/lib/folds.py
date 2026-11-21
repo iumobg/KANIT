@@ -58,7 +58,7 @@ def split(y, groups, arm: str, seed: int, n_folds: int) -> np.ndarray:
 
 
 def group_split(y, groups, seed: int, n_folds: int) -> np.ndarray:
-    """Lineage-aware test folds (protocol §14 item 5). Each lineage goes whole to the fold
+    """Lineage-aware test folds. Each lineage goes whole to the fold
     that keeps the class proportions of the folds most even, the criterion of scikit-learn's
     StratifiedGroupKFold (ties: the fold with fewer genomes). The lineages are visited in a
     random order drawn with the seed, those larger than a fold's share first, so that they

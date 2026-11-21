@@ -9,7 +9,7 @@ separated, because only the first one is shared with the k-mer arm:
   store unitigs --[frequency filter over the pair]-->  kept unitigs
   kept unitigs  --[pattern collapse]---------------->  patterns
 
-The k-mer arm keeps the filter and drops the collapse (§4.2), so collapse_ratio =
+The k-mer arm keeps the filter and drops the collapse, so collapse_ratio =
 kept / patterns is the factor the k-mer arm gives up. A ratio near 1 would mean the
 unitig abstraction buys almost nothing here; a large ratio means the opposite.
 

@@ -1,6 +1,6 @@
 // Every evaluable pair: RGI on its organism, stability selection and the candidates,
 // the evidence layers, the CARD layer, the grades, the same for the patterns nominated by
-// association (protocol §14 item 6) and the label permutation test.
+// association and the label permutation test.
 
 include { RGI_LOAD; RGI_RUN; RGI_COLLECT; CPSS_PREFILTER; CPSS_CHUNK; CPSS_SELECT; PREVALENCE;
           MDA; CARD_LAYER; PYSEER_PREP; PYSEER_LMM; PYSEER_POST; GRADING; LP_CHUNKS; LP_METRICS;

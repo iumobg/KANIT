@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Step 14b — grades of one panel pair's candidate patterns (protocol §9).
+"""Step 14b — grades of one panel pair's candidate patterns.
 
 Every candidate pattern is graded from its CARD state (09) and the four
 statistical layers, in both CARD modes (allele_aware and homolog_only); its
 member unitigs take its grade. config grading.primary_mode names the mode reported
 as ``grade``. The rule is in lib/grading.py. With --set association, the same for the
-patterns nominated by association (§14 item 6; lib/pattern_sets.py), from their own
+patterns nominated by association (lib/pattern_sets.py), from their own
 layers and CARD layer.
 
 Inputs: candidates_file; card_layer_dir/card_patterns.csv and card_unitigs.csv

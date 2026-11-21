@@ -4,7 +4,7 @@ Shared pytest fixtures & helpers for the AMR pipeline test suite.
 
 Goal: let you validate the pipeline in SECONDS/MINUTES instead of re-running the
 full multi-day job. Nothing here modifies the 9 numbered scripts — the suite is
-purely additive (SCALE_MLOPS_PLAN.md §7.5).
+purely additive.
 """
 
 import importlib.util

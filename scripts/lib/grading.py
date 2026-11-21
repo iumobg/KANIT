@@ -1,8 +1,8 @@
-"""Grading rule (protocol §9): the grade of every candidate pattern.
+"""Grading rule: the grade of every candidate pattern.
 
-A pattern is graded from its CARD state (§8.1, lib/card_layer.py) and the
+A pattern is graded from its CARD state (lib/card_layer.py) and the
 statistical layers it passes: prevalence, MDA, CPSS and pyseer. ``RULES`` is the
-protocol's table in its order; the first matching row gives the grade. Member
+rule's table in its order; the first matching row gives the grade. Member
 unitigs take the grade of their pattern and keep their own CARD annotation.
 
 Both CARD modes are graded: ``allele_aware`` (the primary mode) and ``homolog_only``
@@ -12,7 +12,7 @@ hits without ``b``). The configured primary mode names the one reported as
 
 Each statistical layer writes one file per model, ``<layers_dir>/<layer>.csv``,
 with a ``pattern_id`` and a boolean ``passes`` column. Every layer is computed
-for every candidate (protocol §7), so a candidate missing from a layer stops the
+for every candidate, so a candidate missing from a layer stops the
 grading.
 """
 from __future__ import annotations
@@ -34,7 +34,7 @@ def n_passed(passed: Mapping[str, bool]) -> int:
     return sum(bool(passed[layer]) for layer in LAYERS)
 
 
-# (CARD states, condition on the passed layers, grade): protocol §9, in order.
+# (CARD states, condition on the passed layers, grade), in order.
 # "CPSS and pyseer and at least one other" is CPSS and pyseer among >= 3 layers.
 RULES: tuple[tuple[frozenset[str], Callable[[Mapping[str, bool]], bool], str], ...] = (
     (frozenset({B1}), lambda p: n_passed(p) >= 2, CONFIRMED),

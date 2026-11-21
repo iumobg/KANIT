@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Lineage-aware cross-validation helpers (ROADMAP §0.1 M2).
+"""Lineage-aware cross-validation helpers.
 
 Random / chunk-level train-test splits let genomes from the SAME lineage (PopPUNK
 cluster — near-genetic-twins, e.g. E. coli ST131) fall on both sides, so the model
@@ -54,7 +54,7 @@ def load_lineage(genomes_csv: str | Path, clusters_csv: str | Path, *,
     a missing genome means PopPUNK never saw it (re-run clustering). With
     ``allow_missing`` the gaps get ``missing_label`` (each treated as one group).
     """
-    # dtype=str at read time (audit Issue 5): a Genome ID like "562.10" parsed as
+    # dtype=str at read time: a Genome ID like "562.10" parsed as
     # float becomes 562.1 -> "562.1"; astype(str) after the fact cannot recover it.
     genomes = pd.read_csv(genomes_csv, encoding="utf-8",
                           dtype={genome_col: str})[genome_col].astype(str).tolist()

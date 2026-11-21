@@ -6,7 +6,7 @@ carrier genomes of the model and compared with their RGI hits (08); the result
 is one state per unitig and per pattern, in two modes: ``allele_aware`` (the
 primary mode) and ``homolog_only`` (its sensitivity analysis). The rule is in
 lib/card_layer.py. With --set association, the same for the patterns nominated by
-association (§14 item 6; lib/pattern_sets.py).
+association (lib/pattern_sets.py).
 
 Inputs: candidates_file (column pattern_id), the model matrix, the unitig store,
 02d's QC table, the organism's rgi_hits.csv, CARD's rRNA references.

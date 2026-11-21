@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Unit tests for lib.lineage (lineage-aware grouped K-fold, ROADMAP §0.1 M2).
+"""Unit tests for lib.lineage (lineage-aware grouped K-fold).
 
 The defining property: a lineage (PopPUNK cluster) never spans the train and
 test side of a fold. These tests verify that on synthetic groups/labels, plus

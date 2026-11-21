@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Step 02c — PopPUNK lineage clustering (ROADMAP §0.1 M2).
+"""Step 02c — PopPUNK lineage clustering.
 
 Clusters every assembly of an organism into a **lineage** (PopPUNK population
 cluster) ONCE, antibiotic-independent, so the lineage-aware cross-validation
@@ -44,7 +44,7 @@ def lineage_params(organism, config):
     organism's ``lineage:`` override in the registry (organisms.yaml).
 
     ESKAPEE population structures differ enough that one setting cannot serve all
-    seven (docs/literature/E3.md): S. aureus is highly clonal with very low core
+    seven: S. aureus is highly clonal with very low core
     diversity and needs a bigger sketch to separate strains at all, while
     A. baumannii mainly needs a tighter length filter. Everything not overridden
     stays on the shared default, so the panel remains comparable by construction
@@ -113,7 +113,7 @@ def _sketch_args(p):
 
 
 def _qc_args(p):
-    """PopPUNK --qc-db flags from the merged lineage params (E3 §3.4)."""
+    """PopPUNK --qc-db flags from the merged lineage params."""
     args = (f"--max-a-dist {float(p['max_a_dist'])} "
             f"--length-sigma {int(p['length_sigma'])} "
             f"--prop-n {float(p['prop_n'])}")
@@ -315,7 +315,7 @@ def main():
 
     out_path = lineage_dir / args.out_name
     out_df.to_csv(out_path, index=False, encoding="utf-8")
-    # graph-tool, PopPUNK's network backend, changes the clustering on its own (§13)
+    # graph-tool, PopPUNK's network backend, changes the clustering on its own
     write_versions(lineage_dir / "versions.json",
                    {"poppunk": _tool_version("poppunk"), "graph_tool": _pkg_version("graph_tool")})
 

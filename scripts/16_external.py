@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Step 16 — comparison with genotype-based prediction, per organism (protocol §11).
+"""Step 16 — comparison with genotype-based prediction, per organism.
 
 Subcommands, so that the tools can run in their own container:
 

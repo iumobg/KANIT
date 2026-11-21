@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Step 14c — the patterns nominated by association of one panel pair (protocol §14
-item 6, a planned secondary analysis).
+"""Step 14c — the patterns nominated by association of one panel pair (a planned
+secondary analysis).
 
-The patterns that pass the pyseer layer (§8.5) but are not candidates (§7), at most
+The patterns that pass the pyseer layer but are not candidates, at most
 association.max_patterns with the smallest p values (lib/pattern_sets.py). This step
 writes the set and two of its layers: pyseer, which every pattern of the set passes by the
 way it is chosen, and CPSS, from the model's stability selection (a stable pattern is a

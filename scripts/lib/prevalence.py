@@ -1,4 +1,4 @@
-"""Prevalence layer (protocol §8.2).
+"""Prevalence layer.
 
 For every candidate pattern: its prevalence among the resistant and among the
 susceptible genomes of the model, Δ = prev(R) − prev(S) with its direction, and

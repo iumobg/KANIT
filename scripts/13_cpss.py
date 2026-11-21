@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""Step 13 — stability selection (CPSS) of one panel pair (protocol §8.4) and its
-candidate patterns (§7).
+"""Step 13 — stability selection (CPSS) of one panel pair and its
+candidate patterns.
 
 Subcommands:
 

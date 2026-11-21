@@ -1,7 +1,7 @@
-"""The grades against CARD's own RGI tier (protocol §14 item 10).
+"""The grades against CARD's own RGI tier.
 
 RGI gives a hit a tier by its sequence similarity to the CARD reference: Perfect, Strict or Loose
-(Loose hits were not produced, §8.1). A grade measures evidence of association with the
+(Loose hits were not produced). A grade measures evidence of association with the
 phenotype, so no association between the two is expected. The comparison is post-hoc and
 exploratory; it enters no grade or hypothesis decision.
 
@@ -14,7 +14,7 @@ import math
 import pandas as pd
 from scipy.stats import chi2
 
-PRIMARY = "allele_aware"               # the primary CARD mode (§9)
+PRIMARY = "allele_aware"               # the primary CARD mode
 TIERS = ("Perfect", "Strict")
 TIER_ORDER = ("Perfect", "Strict", "mixed")
 AMBIGUOUS, NO_HIT = "ambiguous", "no_hit"

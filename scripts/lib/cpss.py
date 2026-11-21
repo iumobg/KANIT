@@ -1,5 +1,5 @@
-"""Complementary pairs stability selection (CPSS) of one model (protocol §8.4) and
-the candidate patterns (§7).
+"""Complementary pairs stability selection (CPSS) of one model and
+the candidate patterns.
 
 Prefilter: the patterns with the largest χ² (Pearson, the 2 × 2 table of the
 pattern and the label, no continuity correction) over all genomes of the model;
@@ -178,7 +178,7 @@ def layer(pattern_ids, cpss_table: pd.DataFrame, pi_threshold: float) -> pd.Data
 
 
 def candidates(final_booster: xgb.Booster, cpss_table: pd.DataFrame, q_gain: int) -> pd.DataFrame:
-    """§7: the final model's top total-gain patterns and the stable patterns."""
+    """The candidates: the final model's top total-gain patterns and the stable patterns."""
     gain = cast(dict[str, float], final_booster.get_score(importance_type="total_gain"))
     top = top_gain(final_booster, q_gain)
     by_gain = pd.DataFrame({"pattern_id": top, "gain_rank": np.arange(1, top.size + 1),

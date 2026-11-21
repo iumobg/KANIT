@@ -1,7 +1,7 @@
 #!/usr/bin/env nextflow
 /*
- * KANIT v1.0 — evidence-graded knowledge base of AMR biomarkers (protocol
- * docs/V1_PROTOKOL.md; every analysis setting in config/config.yaml).
+ * KANIT v1.0 — evidence-graded knowledge base of AMR biomarkers (every analysis
+ * setting in config/config.yaml).
  *
  * Entries, run in this order:
  *   -entry DOWNLOAD   login node (internet): the data snapshot from BV-BRC
@@ -11,7 +11,7 @@
  *   -entry CONTEXT    login node (internet): NCBI context of the candidate unitigs
  *   -entry KB         the knowledge base, the hypothesis tests and its release package
  *   -entry CABBAGE    external validation of the final models on CABBAGE isolates
- *                     (secondary analysis, protocol §14 item 4; after the primary run)
+ *                     (secondary analysis, after the primary run)
  *   -entry M3         unitig–k-mer comparison, arm B or C (--config_overlay config/m3_B.yml or
  *                     config/m3_C.yml): the main run's pairs with a feature budget of
  *                     unitig patterns or k-mers, written under m3/<arm>/
@@ -66,10 +66,7 @@ def organisms(String entry) {
             error "Tracked files have uncommitted changes (${run.code.changed.join('; ')}); " +
                   "commit them first: a run does not start on a dirty tree"
         }
-        if (run.config.protocol.text_matches == false) {
-            error "config protocol.sha256 is not the checksum of docs/V1_PROTOKOL.md"
-        }
-        // the tested images and databases (config frozen, plan F6.2)
+        // the tested images and databases (config frozen)
         def frozen = kanitConfig().frozen ?: [:]
         (frozen.containers ?: [:]).each { k, sum ->
             def rec = run.containers?.get(k)

@@ -1,4 +1,4 @@
-"""Comparison with genotype-based prediction (protocol §11).
+"""Comparison with genotype-based prediction.
 
 AMRFinderPlus, ResFinder (with PointFinder) and RGI predict a genome resistant to
 an antibiotic when they report at least one qualifying determinant:
@@ -9,9 +9,9 @@ an antibiotic when they report at least one qualifying determinant:
   reference catalogue.
 * ResFinder: its predicted phenotype for the antibiotic; not assessable when the
   phenotype table does not report the antibiotic.
-* RGI: Perfect or Strict hits of the antibiotic's CARD drug classes (Appendix A),
+* RGI: Perfect or Strict hits of the antibiotic's CARD drug classes,
   either all of them or without homolog hits to near-universal genes (≥ 95% of
-  the organism's genomes, §8.1); variant and overexpression calls always count.
+  the organism's genomes); variant and overexpression calls always count.
 * The model: the mean of the lineage-aware out-of-fold probabilities of a genome
   over the repeats, resistant at ≥ the threshold.
 

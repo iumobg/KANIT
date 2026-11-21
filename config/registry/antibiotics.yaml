@@ -6,7 +6,7 @@
 # Adding/renaming an antibiotic class = editing this file only. No code change.
 #
 # TAXONOMY (schema 2.0, 2026-07-13): mechanism-based classes aligned to the
-# CARD ARO ontology (see docs/literature/ESKAPEE1.md §3-5). Two deliberate
+# CARD ARO ontology. Two deliberate
 # design rules for the ML pipeline:
 #   1. CARBAPENEMS are their OWN class (never lumped under beta-lactams) — a
 #      blaKPC/blaNDM carbapenemase is mechanistically miles from a blaTEM
@@ -223,7 +223,7 @@ aliases:
   cefepime_taniborbactam: ["cefepime/taniborbactam"]
 
 # ============================================================================
-# REGISTRY CLASS -> CARD DRUG CLASS TERMS (lib.card_layer; protocol Appendix A)
+# REGISTRY CLASS -> CARD DRUG CLASS TERMS (lib.card_layer)
 # ============================================================================
 # A CARD hit is class-concordant with a model when any drug class of its ARO is
 # listed here for the class of the modelled antibiotic. Terms are CARD's own
@@ -373,7 +373,7 @@ class_mechanism_type:
 
 # ============================================================================
 # WHO AWaRe 2023 category per antibiotic (Access / Watch / Reserve). Clinical
-# stewardship context only — NOT an ML class axis (ESKAPEE1.md §3). Consumed by
+# stewardship context only — NOT an ML class axis. Consumed by
 # build_kb.py (antibiotic.who_aware via lib.registry). Antibiotics not listed -> null.
 # ============================================================================
 who_aware:

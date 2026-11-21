@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The data of the end-to-end test (plan F5.3): a subset of a frozen BV-BRC snapshot.
+"""The data of the end-to-end test: a subset of a frozen BV-BRC snapshot.
 
 Takes n genomes of one antibiotic from the organism's snapshot (half resistant, half
 susceptible where possible, seeded), whose assemblies passed, and writes them as a

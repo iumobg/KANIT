@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Centralised config loading + path resolution (SCALE_MLOPS_PLAN.md §4.2).
+Centralised config loading + path resolution.
 
 This module is the forward-looking, {organism}-aware path layer. It is
 ADDITIVE: the existing numbered scripts keep reading the legacy ``paths:`` keys
@@ -55,7 +55,7 @@ def env_int(name: str, default: int) -> int:
 
 
 # A YAML file whose keys are merged over config.yaml (the workflow's --config_overlay),
-# e.g. the small settings and the separate paths of the end-to-end test (plan F5.3)
+# e.g. the small settings and the separate paths of the end-to-end test
 OVERLAY_ENV = "KANIT_CONFIG_OVERLAY"
 
 

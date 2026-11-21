@@ -1,5 +1,5 @@
 """BV-BRC data of one organism: the queries, the assemblies and the binary
-phenotypes (protocol §2.1–2.2; step 00a).
+phenotypes (step 00a).
 
 Genomes: the public genomes at or below the organism's taxa (``taxon_lineage_ids``),
 with their NCBI identifiers. Records: their antimicrobial susceptibility records
@@ -278,7 +278,7 @@ def pivot_binary(cleaned_long: pd.DataFrame) -> pd.DataFrame:
 def drugs_without_class(wide: pd.DataFrame, min_minority: int) -> dict[str, dict[str, int]]:
     """Single drugs without a registry class whose smaller class reaches min_minority
     before quality control. They may enter the panel, and a drug that does needs its
-    class in the registry and in Appendix A before any model is trained (§3)."""
+    class in the registry, with its CARD drug-class terms, before any model is trained."""
     out = {}
     for ab in wide.columns.drop("Genome ID"):
         if not is_single_drug(ab) or antibiotic_to_class(ab) is not None:

@@ -361,7 +361,7 @@ Q = {"ecoli__ampicillin": 0.01, "ecoli__ciprofloxacin": 0.02, "kpneumoniae__mero
 
 
 def test_the_flagged_model_leaves_the_grade_distribution():
-    """Protocol §14 item 9: meropenem is flagged; the five E. coli candidates remain, three
+    """Sensitivity analysis: meropenem is flagged; the five E. coli candidates remain, three
     of them weak or none. Its own layers are keyed; its grades already are."""
     n = _numbers(PermutedTables(Q))
     assert n["label_permutation.n_flagged"] == 1 and n["label_permutation.n_significant"] == 2
@@ -410,7 +410,7 @@ class HypothesisTables(FakeTables):
 
 
 def test_the_hypotheses_are_keyed_by_what_they_measure():
-    """The protocol's H3 and H7 are the article's H4 and H3: no key carries the number.
+    """The code's H3 and H7 are the article's H4 and H3: no key carries the number.
     A verdict is 1 or 0; a statistic the test could not compute has no key."""
     n = _numbers(HypothesisTables({"status": "no model flagged: the primary analysis",
                                    "excluded_models": []}))

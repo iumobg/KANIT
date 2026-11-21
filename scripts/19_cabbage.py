@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Step 19 — external validation on CABBAGE (protocol §14, item 4; secondary analysis).
+"""Step 19 — external validation on CABBAGE (item 4; secondary analysis).
 
 Subcommands:
 
   download  the release's phenotype table (config cabbage.url) into cabbage_data_dir,
             checked against its MD5; needs internet, so it runs on a login node
   select    the eligible external isolates of every organism (lib/cabbage.py): the rules
-            of §2.2 on CABBAGE's fields, without the isolates BV-BRC holds (the genomes.csv
+            of lib/bvbrc.py on CABBAGE's fields, without the isolates BV-BRC holds (the genomes.csv
             of every organism's snapshot). Writes to cabbage_dir: cabbage_isolates.csv,
             cabbage_phenotypes.csv, cabbage_pairs.csv and cabbage_selection.json (the
             isolates left after every step)
@@ -18,16 +18,16 @@ Subcommands:
   qc-paths  per organism: the shell variables of the CheckM2 task (GENOMES_DIR, CHECKM2_OUT)
   prepare   per organism, after CheckM2 ran on its external assemblies
             (cabbage_organism_dir/checkm2/quality_report.tsv): the assemblies that pass
-            §2.3 (refs.txt for unitig-caller, poppunk_query.txt for poppunk_assign) and, for
+            CheckM2 (refs.txt for unitig-caller, poppunk_query.txt for poppunk_assign) and, for
             every evaluable panel model, the member unitigs of the patterns its final model
             uses (query_<antibiotic>.csv; all of them in unitigs.txt)
   assign    per organism: poppunk_assign of the assemblies that pass QC to the organism's
-            PopPUNK clusters, with the QC of §2.4 and without updating them (poppunk/)
+            PopPUNK clusters, with PopPUNK's QC and without updating them (poppunk/)
   call      per organism: unitig-caller in simple mode, the query unitigs in the same
             assemblies (calls.rtab)
   predict   per organism, after unitig-caller (simple mode, calls.rtab) and poppunk_assign
             (poppunk/poppunk_clusters.csv): every model's prediction of the external isolates
-            with a phenotype for its antibiotic and the metrics of §14 item 4, next to the
+            with a phenotype for its antibiotic and the external-validation metrics, next to the
             model's lineage-aware estimate (cabbage_predictions.csv, cabbage_metrics.json)
   external-prep, external-collect
             AMRFinderPlus and ResFinder on the assemblies that pass QC, with step 16's
@@ -35,7 +35,7 @@ Subcommands:
   rgi, rgi-collect
             RGI on the same assemblies, with step 08's command (cabbage_organism_dir/rgi;
             --shard K --shards N)
-  compare   the genotype-based predictors of §11 and the model on the isolates the model was
+  compare   the genotype-based predictors of step 16 and the model on the isolates the model was
             assessed on, with the same rules and lineage-cluster bootstrap intervals
             (cabbage_comparison.csv)
 
@@ -106,7 +106,7 @@ def download(config: dict) -> Path:
     got = md5_file(tmp)
     if got != c["md5"]:
         tmp.unlink()
-        sys.exit(f"ERROR: {c['url']} has MD5 {got}, the protocol names {c['md5']}")
+        sys.exit(f"ERROR: {c['url']} has MD5 {got}, the configuration names {c['md5']}")
     tmp.replace(out)
     (out.parent / "manifest.json").write_text(json.dumps({
         "release": str(c["release"]), "url": c["url"], "md5": got,
@@ -137,7 +137,7 @@ def select(config: dict) -> dict:
         sys.exit(f"ERROR: no CABBAGE table at {src}; run `19_cabbage.py download` first")
     md5 = md5_file(src)
     if md5 != c["md5"]:
-        sys.exit(f"ERROR: {src} has MD5 {md5}, the protocol names {c['md5']}")
+        sys.exit(f"ERROR: {src} has MD5 {md5}, the configuration names {c['md5']}")
     ph = pd.read_parquet(src, columns=cabbage.COLUMNS)
     ids = cabbage.bvbrc_ids(snapshot_genomes(config))
     isolates, phenotypes, counts = cabbage.select(ph, registry.load_organisms(), ids)
@@ -466,7 +466,7 @@ def compare(organism: str, config: dict) -> pd.DataFrame:
     catalog = ex.catalog_tokens(out / "external" / "amrfinder_catalog.tsv")
     rgi = pd.read_csv(out / "rgi" / "rgi_hits.csv", dtype={"genome_id": str, "aro": str},
                       keep_default_na=False)
-    # the near-universal genes of the organism's own genomes, as in the main comparison (§11)
+    # the near-universal genes of the organism's own genomes, as in the main comparison
     main_rgi = pd.read_csv(resolve_path("rgi_dir", organism=organism, config=config) / "rgi_hits.csv",
                            dtype={"genome_id": str, "aro": str}, keep_default_na=False,
                            usecols=["genome_id", "aro", "model_type", "drug_class"])

@@ -1,4 +1,4 @@
-"""Permutation importance (MDA) of the candidate patterns (protocol §8.3).
+"""Permutation importance (MDA) of the candidate patterns.
 
 The fold models of the lineage-aware arm (04, every repeat) predict their own
 test folds; a pattern, or a group of patterns, is permuted only within each test

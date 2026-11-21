@@ -21,7 +21,7 @@ What this does:
 Reading the result:
 
   homogeneous and faithful  -> the filter is literally the same in both arms, and
-                               §4.2's collapse trap is real: the k-mer arm must not
+                               the collapse trap is real: the k-mer arm must not
                                collapse, or the comparison is null by construction.
   inhomogeneous             -> raw 31-mers carry strictly more information than
                                unitigs, the trap disappears, and the k-mer arm's
@@ -344,10 +344,10 @@ def measure(organism: str, args, config, k: int) -> dict | None:
     print(f"  equal to the store row: {n_faithful:,}/{n:,} ({100 * n_faithful / n:.1f}%)")
     if n_hom < n:
         print("  -> unitigs are NOT homogeneous: raw 31-mers carry more information "
-              "than unitigs, and §4.2's collapse trap does not apply")
+              "than unitigs, and the collapse trap does not apply")
     else:
         print("  -> unitigs are homogeneous over the sampled genomes: the k-mer arm "
-              "must not pattern-collapse (§4.2)")
+              "must not pattern-collapse")
     print(f"  -> {csv_path}")
     return summary
 

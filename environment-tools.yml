@@ -1,5 +1,5 @@
 # ============================================================================
-# amr-tools.sif — the external tools of KANIT v1.0 (plan F6, K9)
+# amr-tools.sif — the external tools of KANIT v1.0
 # ============================================================================
 # QUAST (02d) and the genotype-based predictors AMRFinderPlus and ResFinder with
 # KMA (16). They run as shell commands (run_external.sh, quast.py); no KANIT Python
@@ -7,7 +7,7 @@
 # because these tools pull their own dependency trees. Python moves from 3.8 (end
 # of life) to 3.12; pyseer, which needs 3.8, has its own container (amr-pyseer).
 # BLAST+ is pinned to the version RGI pins in amr.sif (2.16.0): one BLAST+ for the
-# whole run (Appendix B, incompatibility 1).
+# whole run.
 #   conda env create -f environment-tools.yml
 # ============================================================================
 name: amr-tools

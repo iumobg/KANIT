@@ -1,7 +1,7 @@
-"""Population-structure-corrected association with pyseer (protocol §8.5).
+"""Population-structure-corrected association with pyseer.
 
 pyseer's linear mixed model (``pyseer --lmm``) tests the union of the CPSS
-prefilter (§8.4) and the candidate patterns. The kinship matrix is K = G Gᵀ, the
+prefilter and the candidate patterns. The kinship matrix is K = G Gᵀ, the
 number of sampled unitigs two genomes share (the shared-variant kinship of
 pyseer's similarity_pyseer), over a systematic subsample of all unitigs of the
 model, every ``kinship_every``-th one, so that it does not depend on the

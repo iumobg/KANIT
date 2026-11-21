@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Resources of every task of a workflow run (plan F3.5).
+"""Resources of every task of a workflow run.
 
 Joins, on the SLURM job, three records of each task (a receipt without the job's id, which
 happens when SLURM_JOB_ID does not reach the task, takes it from the trace through the task's work

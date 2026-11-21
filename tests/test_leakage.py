@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""No lineage on both sides of any split (protocol §6.1): every outer fold of every
+"""No lineage on both sides of any split: every outer fold of every
 repeat of the lineage-aware arm, and every inner split made inside each outer training
 set. The lineage-blind arm, which does not group, does mix lineages."""
 import sys

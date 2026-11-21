@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Completeness of a workflow run (plan F3.6): every output that the output contract
+"""Completeness of a workflow run: every output that the output contract
 (config/output_contract.yaml, lib/contract.py) lists for the steps of the entry, for
 every organism and panel model, exists and is valid.
 

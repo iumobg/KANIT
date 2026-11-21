@@ -1,4 +1,4 @@
-"""KANIT knowledge base v1: schema, identifiers and checks (docs/V1_BILGI_TABANI.md).
+"""KANIT knowledge base v1: schema, identifiers and checks.
 
 The knowledge base stores what the steps measured and inferred and computes
 nothing new. Measurements (the evidence layers), inferences (the grades) and
@@ -7,8 +7,8 @@ built once from the steps' outputs inside one transaction (build_kb.py), checked
 by ``validate`` and read-only afterwards.
 
 Two routes lead a pattern to a grade (``candidate.route``): ``model``, the candidates
-(protocol §7), whose grades are the primary results, and ``association``, the patterns
-nominated by association (§14 item 6), graded with their own layers; they enter no
+, whose grades are the primary results, and ``association``, the patterns
+nominated by association, graded with their own layers; they enter no
 hypothesis test and are reported apart.
 """
 from __future__ import annotations

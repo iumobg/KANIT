@@ -71,7 +71,7 @@ paths_organism:
   # Statistical layers (<layer>.csv: pattern_id, passes) and the grades (14b_grading.py).
   layers_dir:           "results/{organism}/{antibiotic}/layers"
   grades_dir:           "results/{organism}/{antibiotic}/grades"
-  # The patterns nominated by association (14c; protocol §14 item 6): association.csv and,
+  # The patterns nominated by association (14c): association.csv and,
   # as for the candidates, card_layer/, layers/ and grades/ (lib/pattern_sets.py).
   association_dir:      "results/{organism}/{antibiotic}/association"
   # Stability selection (13) and pyseer (14) of one pair.
@@ -85,15 +85,15 @@ paths_organism:
   external_dir:         "results/{organism}/external"
   # NCBI context of the candidate unitigs (18): cache/ and unitig_context.csv.
   context_dir:          "results/{organism}/context"
-  # External validation on CABBAGE (19_cabbage.py; protocol §14 item 4): the release and the
+  # External validation on CABBAGE (19_cabbage.py): the release and the
   # eligible external isolates of every organism
   cabbage_data_dir:     "data/external/cabbage"
   cabbage_genomes_dir:  "data/external/cabbage/genomes/{organism}"
   cabbage_dir:          "results/cabbage"
   cabbage_organism_dir: "results/{organism}/cabbage"
-  # Reference databases: version, download date and checksums (databases.py, §13).
+  # Reference databases: version, download date and checksums (databases.py).
   databases_manifest:   "data/external/databases.json"
-  # Knowledge base (build_kb.py; docs/V1_BILGI_TABANI.md).
+  # Knowledge base (build_kb.py).
   kb_dir:               "results/kb"
   reports_dir:          "results/reports"                        # figures, numbers (reports.py)
   model_reports_dir:    "results/reports/{organism}/{antibiotic}"  # model figures and report
@@ -105,21 +105,15 @@ paths_organism:
   dir_05_explainability:     "results/{organism}/{antibiotic}/05_explainability"
   experiment_config:    "config/experiments/{organism}/config_{antibiotic}.yaml"
 
-  # MLOps run metadata (SCALE_MLOPS_PLAN.md §7)
+  # MLOps run metadata
   run_dir:              "runs/{organism}/{antibiotic}/{run_id}"
 
 # ----------------------------------------------------------------------------
-# PROVENANCE (reproducibility / future Knowledge Base — SCALE_MLOPS_PLAN.md §4.1)
+# PROVENANCE (reproducibility)
 # ----------------------------------------------------------------------------
-# The analysis protocol in force (docs/V1_PROTOKOL.md, §14 for later changes); the
-# knowledge base records it in its release row.
-protocol:
-  version: "1.0"
-  sha256: "0c61f5109342a4523d64320a8342c9f788693149d90db891795be3f3e023d8ce"
-
-# The frozen environment (plan F6.2): the four Apptainer images that passed the unit and
-# end-to-end tests (F5.4, run 20261005T151352; archived with their lock files in
-# gdrive:KANIT_v1/containers) and the manifest of the reference databases downloaded on
+# The frozen environment: the four Apptainer images that passed the unit and
+# end-to-end tests (run 20261005T151352; archived with their lock files) and the
+# manifest of the reference databases downloaded on
 # 2026-10-04 (scripts/databases.py). A run that is not a stub stops when one differs.
 frozen:
   containers:
@@ -149,7 +143,7 @@ preprocessing:
   # `git reset --hard` silently reverts on the next deploy.
   threads: 10  # CPU threads               (env: AMR_THREADS)
   chunk_size: 200  # Genomes per matrix chunk (for RAM management)
-  
+
   # Features are binary presence/absence: 03u writes a 0/1 unitig matrix.
 
 # ----------------------------------------------------------------------------
@@ -172,11 +166,11 @@ unitig:
   threads: null
 
 # ----------------------------------------------------------------------------
-# LINEAGE-AWARE CV (ROADMAP §0.1 M2 — PopPUNK clusters + GroupKFold)
+# LINEAGE-AWARE CV
 # ----------------------------------------------------------------------------
 # 02c runs PopPUNK once per organism (antibiotic-independent) to label each genome
 # with a lineage cluster; lib/lineage.py then builds GroupKFold folds so an entire
-# lineage stays on one side of train/test (no lineage leakage — ROADMAP §0.1).
+# lineage stays on one side of train/test (no lineage leakage).
 lineage:
   # dbscan gives proper strain-level resolution — MEASURED 2026-07-16 under the
   # pinned container with the E3 sketch settings below (k15-35/2), on the
@@ -221,7 +215,7 @@ lineage:
   refine: false          # global default; A. baumannii overrides via the registry
   threads: null          # null -> preprocessing.threads
 
-  # ── Sketching (PopPUNK --create-db) — docs/literature/E3.md §3.1 ──────────
+  # ── Sketching (PopPUNK --create-db) ───────────────────────────────────────
   # PopPUNK 2.7.8's OWN defaults are min_k 13 / max_k 29 / k_step 4. E3 recommends
   # 15-35 step 2 for ESKAPEE: short k-mers cause spurious matches, and the wider
   # range costs RAM but resolves strains better. We adopt E3's range for EVERY
@@ -235,7 +229,7 @@ lineage:
   k_step: 2
   sketch_size: 10000     # per-organism override in organisms.yaml (S. aureus 10^5 — read the note there: it is a choice, not a measured requirement)
 
-  # ── Quality control (PopPUNK --qc-db, a SEPARATE mode) — E3 §3.4 ──────────
+  # ── Quality control (PopPUNK --qc-db, a SEPARATE mode) ────────────────────
   # Contamination/length outliers corrupt the distance estimates and can make
   # PopPUNK infer a core distance of 0. MEASURED 2026-07-18: with qc:false the
   # A. baumannii clustering COLLAPSED to a single 96.7% mega-cluster (31 lineages,
@@ -247,12 +241,12 @@ lineage:
   # falls back to holdout. QC-failed == low quality, so dropping it from the model
   # is correct, not a workaround.
   qc: true
-  max_a_dist: 0.5        # drop pairs with accessory distance above this (E3 §3.4)
+  max_a_dist: 0.5        # drop pairs with accessory distance above this
   length_sigma: 5        # SD of the length distribution beyond which a genome is cut
   prop_n: 0.1            # max proportion of ambiguous bases
-  length_range: null     # [min, max] bp, or null; per-organism (A. baumannii — E3 §5)
+  length_range: null     # [min, max] bp, or null; per-organism (A. baumannii)
   # ── consumed by the CV step (lib/lineage, 06/07b wiring) ──
-  n_splits: 5            # StratifiedGroupKFold folds (ROADMAP §0.1: 5-10)
+  n_splits: 5            # StratifiedGroupKFold folds
   # NOTE: PopPUNK clusters are used AS-IS — every cluster, singletons included, is
   # its own CV group. There is deliberately no rare-cluster pooling key here: an
   # earlier `min_cluster_size: 10` claimed pooling that no code ever performed.
@@ -288,7 +282,7 @@ card:
   min_overlap: 0.5          # share of the unitig that must overlap an RGI hit
 
 # ----------------------------------------------------------------------------
-# STATISTICAL LAYERS (protocol §8.2–8.3); each writes layers_dir/<layer>.csv
+# STATISTICAL LAYERS; each writes layers_dir/<layer>.csv
 # ----------------------------------------------------------------------------
 prevalence:                 # 10_prevalence.py, lib/prevalence.py
   min_delta: 0.10           # |prev(R) - prev(S)|
@@ -299,23 +293,23 @@ mda:                        # 12_mda.py, lib/mda.py
   alpha: 0.05               # BH q over the model's candidates
   cluster_r: 0.9            # sensitivity analysis: |r| that links candidates into one group
 
-cpss:                       # 13_cpss.py, lib/cpss.py (protocol §8.4)
+cpss:                       # 13_cpss.py, lib/cpss.py
   prefilter: 5000           # patterns with the largest chi2 over all genomes of the model
   n_pairs: 100              # B pairs of disjoint half-samples -> 2B fits
   q: 50                     # patterns a fit selects (highest total gain)
   pi_threshold: 0.6         # stable at this selection frequency or above
   seed: 0                   # pair b is split with the seed (seed, b)
   chunk: 100                # pairs per task: every model's 200 fits in one job (pilot: seconds)
-candidates:                 # protocol §7 (written by 13_cpss.py select)
+candidates:                 # written by 13_cpss.py select
   top_gain: 50              # the final model's patterns with the highest total gain
-pyseer:                     # 14_pyseer.py, lib/pyseer_lmm.py (protocol §8.5)
+pyseer:                     # 14_pyseer.py, lib/pyseer_lmm.py
   kinship_every: 100        # every 100th unitig of the model builds the kinship matrix
   alpha: 0.05               # Bonferroni: alpha / number of patterns tested
   background_max: 5000      # λ diagnostic: at most this many unitigs between the kinship sample
-association:                # 14c_association.py, lib/pattern_sets.py (protocol §14 item 6)
+association:                # 14c_association.py, lib/pattern_sets.py
   max_patterns: 50          # the pyseer-significant non-candidates with the smallest p values
 
-context:                    # 18_ncbi_context.py, lib/ncbi_context.py (protocol §12; not evidence)
+context:                    # 18_ncbi_context.py, lib/ncbi_context.py (not evidence)
   word_size: 11
   max_target_seqs: 50       # HITLIST_SIZE of the BLAST URL API
   evalue: 10
@@ -331,13 +325,13 @@ packing:                    # lib/packing.py: CV units / permutation chunks of o
   bytes_per_cell: 3.2       # training matrix, per genome × pattern (E. coli probe: 3.06)
   gb_per_million_patterns: 9.0   # or, if larger, per pattern (full run: P. aeruginosa, E. coli)
 
-cabbage:                    # 19_cabbage.py, lib/cabbage.py (protocol §14 item 4; secondary analysis)
+cabbage:                    # 19_cabbage.py, lib/cabbage.py (secondary analysis)
   release: "2026-07"        # EBI AMR Portal release
   url: "https://ftp.ebi.ac.uk/pub/databases/amr_portal/releases/2026-07/phenotype.parquet"
   md5: "d2ccca428bf39462f9ba6aefb33ffdf9"
   min_per_class: 10         # a pair is assessed with at least this many R and S isolates
 
-# Label permutation test of every model (12b_label_permutation.py; protocol §8.6)
+# Label permutation test of every model (12b_label_permutation.py)
 label_permutation:
   n_permutations: 100       # R; smallest attainable p = 1/(R + 1)
   seed: 0                   # permutation b is seeded by (seed, b)
@@ -345,7 +339,7 @@ label_permutation:
   alpha: 0.05               # BH q across models; q >= alpha flags permutation_not_significant
 
 # ----------------------------------------------------------------------------
-# GRADING RULE (14b_grading.py, lib/grading.py; protocol §9)
+# GRADING RULE (14b_grading.py, lib/grading.py)
 # ----------------------------------------------------------------------------
 grading:
   primary_mode: allele_aware   # CARD mode reported as `grade`: allele_aware | homolog_only (both stored)
@@ -367,7 +361,7 @@ training:
   random_seed: 42  # For reproducible train/test splits
   test_fraction: 0.20  # Fraction of total chunks reserved for testing (20%)
   validation_fraction: 0.2  # Fraction of training data for early stopping validation
-  
+
   # Hyperparameter optimization
   n_trials: 30  # Number of Optuna optimization trials (upper bound)
   # Early-stopping for HPO: stop once this many COMPLETED trials pass without

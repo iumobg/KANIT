@@ -1,4 +1,4 @@
-"""The output contract (config/output_contract.yaml; plan F4.1): table schemas and the
+"""The output contract (config/output_contract.yaml): table schemas and the
 outputs of every step, and the validation of a CSV against its schema.
 
 A CSV is read as text (an empty cell is missing) and checked for: the columns of the

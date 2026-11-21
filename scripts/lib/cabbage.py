@@ -1,6 +1,6 @@
-"""External validation on CABBAGE (protocol §14, item 4): the eligible isolates.
+"""External validation on CABBAGE: the eligible isolates.
 
-CABBAGE's phenotypes (EBI AMR Portal) of the study organisms pass the rules of §2.2, and
+CABBAGE's phenotypes (EBI AMR Portal) of the study organisms pass the phenotype rules of lib/bvbrc.py, and
 every isolate that BV-BRC holds is removed, so that no model has seen an external isolate:
 an isolate with a record from BV-BRC (`PATRIC` among its sources), and one whose BioSample,
 SRA or assembly accession is that of a genome of the snapshots' BV-BRC queries. The
@@ -160,7 +160,7 @@ def select(ph: pd.DataFrame, organisms: dict, ids: dict[str, set[str]]
 
 
 def taxon_ok(tax_id: int | None, lineages: dict[int, set[int]], taxids) -> bool:
-    """Whether an NCBI taxon is at or below one of the organism's taxa (§2.1)."""
+    """Whether an NCBI taxon is at or below one of the organism's taxa."""
     return tax_id is not None and bool(lineages.get(tax_id, {tax_id}) & {int(t) for t in taxids})
 
 

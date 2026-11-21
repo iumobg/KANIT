@@ -1,5 +1,5 @@
 # ============================================================================
-# CheckM2 — genome completeness/contamination QC (ROADMAP §0.2 M15)
+# CheckM2 — genome completeness/contamination QC
 # ============================================================================
 # Its OWN env/container (amr-checkm2.sif).
 #

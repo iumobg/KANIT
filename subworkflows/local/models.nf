@@ -1,6 +1,6 @@
 // Every panel pair: the model matrix, the outer folds, every evaluable outer fold,
 // the final model and the out-of-fold metrics. A pair that is not evaluable stops
-// after its folds (protocol §6.2).
+// after its folds.
 
 include { MODEL_MATRIX; CV_FOLDS; CV_PACKING; CV_UNITS; CV_FINAL; CV_METRICS } from '../../modules/local/models'
 

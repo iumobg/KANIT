@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Record, show and verify the reference databases (protocol §13; lib/databases.py).
+"""Record, show and verify the reference databases (lib/databases.py).
 
   record NAME --path P [--source URL] [--version V] [--downloaded-on YYYY-MM-DD]
           right after a download: version, date, source and file checksums

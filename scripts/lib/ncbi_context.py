@@ -1,4 +1,4 @@
-"""Genomic context of the candidate unitigs from NCBI (protocol §12); not evidence.
+"""Genomic context of the candidate unitigs from NCBI; not evidence.
 
 Candidate unitigs are searched with remote blastn against nt through NCBI's
 BLAST URL API, restricted to the organism (``txid<N>[Organism:exp]``), word size

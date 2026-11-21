@@ -1,4 +1,4 @@
-// External validation on CABBAGE (19; protocol §14 item 4): a secondary analysis on the
+// External validation on CABBAGE (19): a secondary analysis on the
 // final models of the primary run. The release's table, the eligible isolates and their
 // GenBank assemblies (login node, internet); per organism CheckM2, the lineages and the
 // unitig calls of the external assemblies, the models' predictions, the genotype-based

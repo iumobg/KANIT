@@ -1,4 +1,4 @@
-"""QC figures of the steps (plan F4.2, Appendix C), drawn from the steps' CSV tables only.
+"""QC figures of the steps, drawn from the steps' CSV tables only.
 
 Every function takes the tables (pandas DataFrames, as the contract describes them)
 and returns a matplotlib Figure; reports.py reads the tables and saves the figures.

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The release package of the knowledge base (docs/V1_BILGI_TABANI.md §7).
+"""The release package of the knowledge base.
 
 Reads the built kanit.sqlite and writes the files of a deposit into package/: the
 database itself; kanit_tables.zip, which holds one CSV per table described by a

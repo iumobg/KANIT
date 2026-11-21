@@ -53,10 +53,8 @@ def _config(root: Path) -> dict:
         "unitig_store_dir": "{organism}/store", "databases_manifest": "databases.json",
         "kb_dir": "kb", "reports_dir": "reports",
         "model_reports_dir": "reports/{organism}/{antibiotic}"}.items()}
-    text = PROJECT_ROOT / "docs" / "V1_PROTOKOL.md"
     return {
         "paths_organism": t,
-        "protocol": {"version": "1.0", "sha256": sha256_file(text) if text.exists() else "x"},
         "panel": {"min_minority": 20}, "unitig": {"k": 31, "min_support": 5},
         "hpo": {"n_trials": 3, "search_max_genomes": 80, "pruner_startup_trials": 1,
                 "pruner_warmup_rounds": 5, "early_stopping_rounds": 10, "max_rounds": 100,
@@ -366,7 +364,7 @@ def test_signal_is_graded_from_its_card_variant_hit(built):
 
 
 def test_the_association_set_is_graded_apart(built):
-    """Protocol §14 item 6: the pyseer-significant patterns that are not candidates, at
+    """The pyseer-significant patterns that are not candidates, at
     most association.max_patterns with the smallest p values, graded from their own layers
     by the unchanged rule, stored with the route association and kept out of the
     hypothesis tests."""

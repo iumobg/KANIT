@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Step 10 — prevalence layer of one panel pair's candidate patterns (protocol §8.2).
+"""Step 10 — prevalence layer of one panel pair's candidate patterns.
 
 Prevalence among the resistant and the susceptible genomes of the model, Δ and
 its direction, and a Fisher exact test with Benjamini–Hochberg over the
 candidates. The rule is in lib/prevalence.py. With --set association, the same for
-the patterns nominated by association (§14 item 6), adjusted over them
+the patterns nominated by association, adjusted over them
 (lib/pattern_sets.py).
 
 Inputs: candidates_file, the model matrix. Output: layers_dir/prevalence.csv.

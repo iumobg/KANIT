@@ -1,9 +1,9 @@
 # ============================================================================
-# OUTPUT CONTRACT (plan F4.1) — the one source of every step's outputs
+# OUTPUT CONTRACT — the one source of every step's outputs
 # ============================================================================
 # Every step writes: a main CSV in long format, described by a table schema below
 # (data dictionary and validation); a summary JSON; its receipt (step manifest,
-# scripts/receipt.py); and a QC figure, drawn from its CSVs only (F4.2).
+# scripts/receipt.py); and a QC figure, drawn from its CSVs only.
 # completeness.py checks every output listed here; lib/contract.py reads this file.
 #
 # tables: <id>
@@ -28,7 +28,7 @@ tables:
   phenotypes_long:
     location: metadata_file
     file: amr_cleaned_long.csv
-    description: "One binary phenotype per genome and antibiotic after the rules of protocol §2.2."
+    description: "One binary phenotype per genome and antibiotic after the phenotype rules of lib/bvbrc.py."
     primary_key: [genome_id, antibiotic]
     min_rows: 1
     fields:
@@ -96,7 +96,7 @@ tables:
   genome_qc:
     location: genome_qc_dir
     file: "02d_genome_qc_{organism}.csv"
-    description: "CheckM2 and QUAST values of every assembly and the thresholds it passes (§2.3)."
+    description: "CheckM2 and QUAST values of every assembly and the thresholds it passes."
     primary_key: [genome_id]
     min_rows: 1
     fields:
@@ -116,7 +116,7 @@ tables:
   lineage_clusters:
     location: lineage_dir
     file: poppunk_clusters.csv
-    description: "PopPUNK lineage cluster of every genome (§2.4)."
+    description: "PopPUNK lineage cluster of every genome."
     primary_key: [Genome ID]
     min_rows: 1
     fields:
@@ -127,7 +127,7 @@ tables:
   panel_decisions:
     location: panel_dir
     file: panel_decisions.csv
-    description: "The panel decision of every organism–antibiotic pair with its counts and reason (§3)."
+    description: "The panel decision of every organism–antibiotic pair with its counts and reason."
     primary_key: [organism, antibiotic]
     min_rows: 1
     fields:
@@ -146,7 +146,7 @@ tables:
   model_patterns:
     location: matrix_dir
     file: patterns.csv
-    description: "The distinct presence/absence patterns of the model's unitigs (§4)."
+    description: "The distinct presence/absence patterns of the model's unitigs."
     primary_key: [pattern_id]
     fields:
       - {name: pattern_id, type: integer, required: true, minimum: 0, description: "Pattern index (matrix column)"}
@@ -191,7 +191,7 @@ tables:
   oof_predictions:
     location: cv_dir
     file: oof_predictions.csv
-    description: "Out-of-fold predicted probability of resistance of every genome, per arm and repeat (§6)."
+    description: "Out-of-fold predicted probability of resistance of every genome, per arm and repeat."
     primary_key: [arm, repeat, genome_id]
     min_rows: 1
     fields:
@@ -215,7 +215,7 @@ tables:
   repeat_metrics:
     location: cv_dir
     file: repeat_metrics.csv
-    description: "Pooled out-of-fold metrics of every repeat (§6.3)."
+    description: "Pooled out-of-fold metrics of every repeat."
     fields:
       - {name: arm, type: string, required: true, description: "Cross-validation arm"}
       - {name: repeat, type: integer, required: true, description: "Repeat"}
@@ -277,7 +277,7 @@ tables:
   label_permutation_null:
     location: label_permutation_dir
     file: label_permutation_null.csv
-    description: "ROC AUC of every label permutation of the model (§8.6)."
+    description: "ROC AUC of every label permutation of the model."
     fields:
       - {name: permutation, type: integer, required: true, description: "Permutation"}
       - {name: auc, type: number, description: "Pooled out-of-fold ROC AUC with permuted labels"}
@@ -302,7 +302,7 @@ tables:
   cpss_patterns:
     location: cpss_dir
     file: cpss.csv
-    description: "Selection frequency π of every prefilter pattern over the CPSS fits (§8.4)."
+    description: "Selection frequency π of every prefilter pattern over the CPSS fits."
     primary_key: [pattern_id]
     fields:
       - {name: pattern_id, type: integer, required: true, description: "Pattern index"}
@@ -323,7 +323,7 @@ tables:
   candidates:
     location: candidates_file
     file: ""
-    description: "The candidate patterns of the model (top total gain and stable patterns, §7)."
+    description: "The candidate patterns of the model (top total gain and stable patterns)."
     primary_key: [pattern_id]
     fields:
       - {name: pattern_id, type: integer, required: true, description: "Pattern index"}
@@ -348,7 +348,7 @@ tables:
   prevalence_layer:
     location: layers_dir
     file: prevalence.csv
-    description: "Carriage of every candidate among resistant and susceptible genomes (§8.2)."
+    description: "Carriage of every candidate among resistant and susceptible genomes."
     primary_key: [pattern_id]
     fields: &prevalence_layer_fields
       - {name: pattern_id, type: integer, required: true, description: "Pattern index"}
@@ -368,7 +368,7 @@ tables:
   mda_layer:
     location: layers_dir
     file: mda.csv
-    description: "Permutation importance (mean decrease in AUC) of every candidate (§8.3)."
+    description: "Permutation importance (mean decrease in AUC) of every candidate."
     primary_key: [pattern_id]
     fields: &mda_layer_fields
       - {name: pattern_id, type: integer, required: true, description: "Pattern index"}
@@ -402,7 +402,7 @@ tables:
   pyseer_tested:
     location: pyseer_dir
     file: pyseer_tested.csv
-    description: "pyseer LMM association of every tested pattern (§8.5)."
+    description: "pyseer LMM association of every tested pattern."
     fields:
       - {name: pattern_id, type: integer, required: true, description: "Pattern index"}
       - {name: variant, type: string, description: "pyseer variant name"}
@@ -440,7 +440,7 @@ tables:
   card_unitigs:
     location: card_layer_dir
     file: card_unitigs.csv
-    description: "CARD state of every candidate unitig in both modes (§8.1)."
+    description: "CARD state of every candidate unitig in both modes."
     fields: &card_unitigs_fields
       - {name: pattern_id, type: integer, required: true, description: "Pattern index"}
       - {name: unitig_index, type: integer, required: true, description: "Unitig index in the store"}
@@ -474,7 +474,7 @@ tables:
   grades_patterns:
     location: grades_dir
     file: grades_patterns.csv
-    description: "Evidence grade of every candidate pattern in both modes (§9)."
+    description: "Evidence grade of every candidate pattern in both modes."
     primary_key: [pattern_id]
     fields: &grades_patterns_fields
       - {name: pattern_id, type: integer, required: true, description: "Pattern index"}
@@ -504,14 +504,14 @@ tables:
       - {name: length, type: integer, description: "Length (bp)"}
       - {name: grade, type: string, required: true, enum: [confirmed, strong_novel, candidate, weak, none], description: "Grade of the primary mode"}
 
-  # ---- 14c patterns nominated by association (§14 item 6) ---------------------------------
+  # ---- 14c patterns nominated by association ---------------------------------
   # The candidates' tables (shared fields) for the patterns that pass pyseer but are not
   # candidates; 14c writes the set and its pyseer and CPSS layers, 09, 10, 12 and 14b the
   # rest with --set association.
   association_patterns:
     location: association_dir
     file: association.csv
-    description: "The patterns nominated by association: pyseer-significant patterns that are not candidates, at most association.max_patterns with the smallest p values (§14 item 6)."
+    description: "The patterns nominated by association: pyseer-significant patterns that are not candidates, at most association.max_patterns with the smallest p values."
     primary_key: [pattern_id]
     fields:
       - {name: pattern_id, type: integer, required: true, description: "Pattern index"}
@@ -532,13 +532,13 @@ tables:
   association_prevalence_layer:
     location: association_dir
     file: layers/prevalence.csv
-    description: "Prevalence layer of the association set, adjusted over the set (§8.2)."
+    description: "Prevalence layer of the association set, adjusted over the set."
     primary_key: [pattern_id]
     fields: *prevalence_layer_fields
   association_mda_layer:
     location: association_dir
     file: layers/mda.csv
-    description: "MDA layer of the association set, adjusted over the set (§8.3)."
+    description: "MDA layer of the association set, adjusted over the set."
     primary_key: [pattern_id]
     fields: *mda_layer_fields
   association_mda_clusters:
@@ -549,7 +549,7 @@ tables:
   association_card_unitigs:
     location: association_dir
     file: card_layer/card_unitigs.csv
-    description: "CARD state of every unitig of the association set in both modes (§8.1)."
+    description: "CARD state of every unitig of the association set in both modes."
     fields: *card_unitigs_fields
   association_card_patterns:
     location: association_dir
@@ -560,7 +560,7 @@ tables:
   association_grades_patterns:
     location: association_dir
     file: grades/grades_patterns.csv
-    description: "Evidence grade of every pattern of the association set in both modes (§9); not comparable with the candidates' grades."
+    description: "Evidence grade of every pattern of the association set in both modes; not comparable with the candidates' grades."
     primary_key: [pattern_id]
     fields: *grades_patterns_fields
   association_grades_unitigs:
@@ -574,7 +574,7 @@ tables:
   external_comparison:
     location: external_dir
     file: comparison.csv
-    description: "Agreement of AMRFinderPlus, ResFinder, RGI and the model with the phenotypes (§11)."
+    description: "Agreement of AMRFinderPlus, ResFinder, RGI and the model with the phenotypes."
     primary_key: [model_id, tool]
     min_rows: 1
     fields:
@@ -623,7 +623,7 @@ tables:
   unitig_context:
     location: context_dir
     file: unitig_context.csv
-    description: "NCBI nt context of every candidate unitig (§12; context, not evidence)."
+    description: "NCBI nt context of every candidate unitig (context, not evidence)."
     fields:
       - {name: unitig_id, type: string, required: true, description: "KU identifier"}
       - {name: organism_id, type: string, description: "Registry organism"}
@@ -673,7 +673,7 @@ tables:
       - {name: n_b, type: integer, description: "CARD gene families of the candidates of model b"}
       - {name: n_shared, type: integer, description: "CARD gene families shared by the two models"}
       - {name: n_universe, type: integer, description: "CARD gene families of all models of the organism"}
-      - {name: overlap, type: number, description: "Overlap coefficient: shared families over the smaller set (protocol §10, H3)"}
+      - {name: overlap, type: number, description: "Overlap coefficient: shared families over the smaller set (H3)"}
       - {name: fold_enrichment, type: number, description: "Observed over expected overlap"}
       - {name: fisher_p, type: number, description: "Fisher p value"}
       - {name: mc_p, type: number, description: "Monte Carlo p value"}
@@ -724,7 +724,7 @@ tables:
       - {name: description, type: string, description: "What it counts or measures"}
       - {name: exact, type: string, description: "A float before rounding (empty otherwise), for a text that rounds it again"}
 
-  # ---- 19 external validation on CABBAGE (secondary analysis, §14 item 4) -------
+  # ---- 19 external validation on CABBAGE (secondary analysis) --------------------
   cabbage_isolates:
     location: cabbage_dir
     file: cabbage_isolates.csv
@@ -778,7 +778,7 @@ tables:
   cabbage_qc:
     location: cabbage_organism_dir
     file: cabbage_qc.csv
-    description: "CheckM2 of the external assemblies (§2.3: completeness >= 95, contamination <= 5)."
+    description: "CheckM2 of the external assemblies (completeness >= 95, contamination <= 5)."
     primary_key: [biosample_id]
     fields:
       - {name: biosample_id, type: string, required: true, description: "BioSample of the isolate"}
@@ -801,7 +801,7 @@ tables:
   cabbage_comparison:
     location: cabbage_organism_dir
     file: cabbage_comparison.csv
-    description: "The genotype-based predictors (§11) and the model on the assessed external isolates, with lineage-cluster bootstrap intervals."
+    description: "The genotype-based predictors and the model on the assessed external isolates, with lineage-cluster bootstrap intervals."
     primary_key: [model_id, tool]
     fields:
       - {name: model_id, type: string, required: true, description: "organism__antibiotic"}

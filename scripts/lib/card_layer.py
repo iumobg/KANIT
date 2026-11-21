@@ -17,7 +17,7 @@ and it is
 genomes. A unitig with a hit but without ``b`` keeps the reasons of its hits:
 ``co_carried_known_gene`` (drug class does not match), ``near_universal_gene``,
 ``allele_not_in_unitig``, and ``b_in_minority_of_located_genomes`` when ``b`` holds
-in some located genomes but not in more than half (protocol §14 item 7). Any hit in
+in some located genomes but not in more than half. Any hit in
 any located genome counts as a CARD hit, so
 a unitig is never called novel next to a known gene. A pattern takes the best
 state of its member unitigs.

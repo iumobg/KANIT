@@ -10,13 +10,13 @@ def pair(meta) {
 }
 
 // The patterns of a layer or grading task: the candidates, or with meta.set the patterns
-// nominated by association (protocol §14 item 6), graded in their own directory
+// nominated by association, graded in their own directory
 def patternSet(meta) {
-    meta.set ? " --set ${meta.set}" : ''
+    meta.set ? " --set ${meta.set}": ''
 }
 
 def taskKey(meta) {
-    meta.set ? "${meta.id} ${meta.set}" : meta.id
+    meta.set ? "${meta.id} ${meta.set}": meta.id
 }
 
 process RGI_LOAD {
@@ -189,7 +189,7 @@ process CARD_LAYER {
 
     script:
     """
-    # reasons of protocol §14 item 7
+    # reasons of non-concordance
     ${py('09_card_layer.py')} ${pair(meta)}${patternSet(meta)}
     ${receipt(task, 'card_layer', taskKey(meta))}
     """
@@ -283,7 +283,7 @@ process GRADING {
     stubReceipt(task, 'grading', taskKey(meta))
 }
 
-// The patterns nominated by association (14c; protocol §14 item 6) with their pyseer and
+// The patterns nominated by association (14c) with their pyseer and
 // CPSS layers; PREVALENCE, MDA, CARD_LAYER and GRADING then take them with meta.set
 process ASSOCIATION_SET {
     tag "${meta.id}"

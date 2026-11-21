@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Safe subprocess execution — canonical single copy (SCALE_MLOPS_PLAN §5).
+"""Safe subprocess execution — canonical single copy.
 
 run_command tokenises with shlex and runs with shell=False, eliminating the
-shell-injection vector (audit B01): special characters in genome IDs / paths
+shell-injection vector: special characters in genome IDs / paths
 are passed as literal argument tokens, never interpreted by a shell.
 """
 

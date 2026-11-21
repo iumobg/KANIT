@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Step 14 — pyseer LMM of one panel pair (protocol §8.5).
+"""Step 14 — pyseer LMM of one panel pair.
 
 Subcommands, so that pyseer can run in its own container:
 

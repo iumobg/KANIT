@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Run metadata & reproducibility capture (SCALE_MLOPS_PLAN.md §7.1).
+Run metadata & reproducibility capture.
 
 Every pipeline run can stamp a reproducible fingerprint — git commit, seeds,
 tool versions, data hashes — so a model file, log, result and (future) KB row
@@ -8,7 +8,7 @@ all trace back to a single run_id. All helpers are best-effort and must never
 crash the pipeline: callers wrap them in try/except and treat failure as
 non-fatal.
 
-run_id format (SCALE_MLOPS_PLAN.md §2):
+run_id format:
     {organism}__{antibiotic}__{UTC:%Y%m%dT%H%M}__{git7}
 """
 
@@ -178,7 +178,7 @@ def hash_files(paths):
 
 def build_run_metadata(organism, antibiotic, run_id, seed=None,
                        params=None, data_files=None, config=None, extra=None):
-    """Assemble the run_metadata.json payload (SCALE_MLOPS_PLAN §7.1)."""
+    """Assemble the run_metadata.json payload."""
     meta = {
         "run_id": run_id,
         "organism": organism,

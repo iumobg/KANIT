@@ -1,4 +1,4 @@
-"""External validation on CABBAGE (protocol §14, item 4): the final models on the
+"""External validation on CABBAGE: the final models on the
 external isolates.
 
 The member unitigs of every pattern a final model uses are searched in the external
@@ -6,7 +6,7 @@ assemblies (unitig-caller, simple mode: exact match on either strand). A pattern
 in an assembly when at least half of its member unitigs are; the model then gives the
 probability of resistance, read at threshold 0.5. Every metric has a percentile interval
 from lineage-cluster bootstrap resamples: the external isolates' PopPUNK clusters, drawn
-with replacement, as in §6.3.
+with replacement, as in the internal evaluation.
 """
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ from sklearn.metrics import average_precision_score
 from lib.oof_metrics import _auc
 
 PRESENT_SHARE = 0.5                     # a pattern needs at least half of its members
-COMPLETENESS_MIN, CONTAMINATION_MAX = 95.0, 5.0     # CheckM2, as for the panel genomes (§2.3)
+COMPLETENESS_MIN, CONTAMINATION_MAX = 95.0, 5.0     # CheckM2, as for the panel genomes
 METRICS = ["roc_auc", "pr_auc", "pr_auc_baseline", "balanced_accuracy", "sensitivity",
            "specificity", "very_major_error_rate", "major_error_rate"]
 
@@ -111,7 +111,7 @@ def predict(booster, n_patterns: int, presence: pd.DataFrame,
 
 
 def metrics(y, p, w=None, threshold: float = 0.5) -> dict:
-    """The metrics of §14 item 4 (§6.3, §11), each genome weighted by ``w``."""
+    """The external-validation metrics, each genome weighted by ``w``."""
     y, p = np.asarray(y, dtype=int), np.asarray(p, dtype=float)
     w = np.ones(len(y)) if w is None else np.asarray(w, dtype=float)
     pred = p >= threshold

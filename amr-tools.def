@@ -1,5 +1,5 @@
 Bootstrap: docker
-# The final containers (F6.2) pin the base image by digest; the development ones use the tag.
+# The final containers pin the base image by digest; the development ones use the tag.
 From: condaforge/miniforge3:latest
 # ============================================================================
 # amr-tools.sif — the external tools of KANIT v1.0 (environment-tools.yml)
@@ -10,7 +10,7 @@ From: condaforge/miniforge3:latest
 #   apptainer exec $AMR_WORK/containers/amr-tools.sif conda env export \
 #       -p /opt/amr-tools-env > environment-tools.lock.yml
 # AMRFinderPlus's database is not in the image: it is downloaded with the other
-# databases (F6.2) and recorded with scripts/databases.py.
+# databases and recorded with scripts/databases.py.
 # ============================================================================
 
 %files

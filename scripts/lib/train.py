@@ -85,8 +85,8 @@ def inner_split(y, groups, arm: str, seed: int, n_folds: int = 5) -> tuple[np.nd
     """(train, validation) positions: of the folds of an ``n_folds`` split of the arm's
     type whose validation and training sides both hold both classes, the one closest in
     size to one fifth of the genomes (ties: the first). A lineage larger than a fold's
-    share fills a fold of its own, which is no fifth (protocol §14 item 5: the first fold,
-    used before, was the largest lineage's)."""
+    share fills a fold of its own, which is no fifth (the first fold would be the
+    largest lineage's)."""
     y = np.asarray(y)
     fold_of = folds.split(y, groups, arm, seed, n_folds)
     usable = [k for k in range(n_folds) if len(set(y[fold_of == k].tolist())) == 2

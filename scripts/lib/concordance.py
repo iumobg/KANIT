@@ -10,7 +10,7 @@ Convention: label 1 = **resistant** (the positive/clinically-important class),
 0 = susceptible. ``y_true`` is the reference (usually the phenotype); ``y_pred``
 is the predictor being graded (a tool or the model).
 
-FDA/CLSI genotype-vs-phenotype error bands (ROADMAP §0.1): Major Error (ME) =
+FDA/CLSI genotype-vs-phenotype error bands: Major Error (ME) =
 predict R when truly S (false resistant), band ME ≤ 3%; Very Major Error (VME) =
 predict S when truly R (missed resistance — the dangerous one), band ≤ 1.5–7.5%.
 """
@@ -162,7 +162,7 @@ def paired_difference(differences, clusters=None, n_boot=1000, seed=0):
     ``clusters`` names the unit drawn with replacement — here the organism. The
     models of one organism share genomes and lineages, so resampling the pairs
     themselves would count them as independent evidence and narrow the interval.
-    Drawing clusters instead follows §6.3, which already reports cluster-aware
+    Drawing clusters instead follows the internal evaluation, which already reports cluster-aware
     intervals and a paired interval for the arm difference. Pass None to draw the
     pairs, which is only right when they are independent.
 

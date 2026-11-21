@@ -1,8 +1,8 @@
 """The two sets of graded patterns of a model.
 
-``candidates`` (protocol §7): nominated by the final model and by stability selection;
-their grades are the primary results. ``association`` (protocol §14 item 6): the patterns
-that pass the pyseer layer (§8.5) but are not candidates, at most ``max_patterns`` with the
+``candidates``: nominated by the final model and by stability selection;
+their grades are the primary results. ``association``: the patterns
+that pass the pyseer layer but are not candidates, at most ``max_patterns`` with the
 smallest p values. Steps 09, 10, 12 and 14b compute every evidence layer and the grades of
 either set (``--set``), the association set in its own directory with its own
 multiple-testing families, as the candidates have theirs. The association set enters no

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Step 00a — the data snapshot of one organism from BV-BRC (protocol §2.1–2.2).
+"""Step 00a — the data snapshot of one organism from BV-BRC.
 
 Subcommands (internet; the DOWNLOAD entry runs them on a login node):
 
@@ -12,7 +12,7 @@ Subcommands (internet; the DOWNLOAD entry runs them on a login node):
           query date, API version, filters, counts and the checksum of every
           snapshot file (the assemblies' checksums are in download_report.csv); it
           warns of single drugs without a registry class whose smaller class already
-          reaches the panel threshold before quality control (protocol §3)
+          reaches the panel threshold before quality control
   verify  every checksum of the frozen snapshot, the assemblies included
   all     query (unless done), fetch and freeze; with a frozen snapshot, verify only
 
@@ -180,7 +180,7 @@ def freeze(meta: Path, phenotypes_file: Path, *, min_minority: int) -> dict:
     no_class = bvbrc.drugs_without_class(wide, min_minority)
     if no_class:
         print(f"  WARNING: drugs without a registry class may pass the panel: {no_class}; "
-              "register their class (and Appendix A) before the main run (protocol §3)")
+              "register their class (with its CARD drug-class terms) before the main run")
     snap = {"frozen_at": _now(), "query": json.loads((meta / "query.json").read_text()),
             "n_genomes": len(wide), "n_assemblies_failed": len(g) - len(passed),
             "n_antibiotics": len(wide.columns) - 1, "drugs_without_class": no_class,

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build the knowledge base from the steps' outputs (docs/V1_BILGI_TABANI.md).
+"""Build the knowledge base from the steps' outputs.
 
 Reads the registry, the panel decisions and, for every organism and included
 pair, the outputs of the steps (00, 02c, 02d, 03u, 04, 08–14c, 12b); loads them
@@ -297,7 +297,7 @@ def model_tables(org: str, ab: str, config: dict, src: Sources) -> dict[str, pd.
         [{"tool": "pyseer", "version": pyseer["pyseer_version"]}]
         + [{"tool": t, "version": v} for t, v in final.get("versions", {}).items()])
     # the graded patterns: the candidates (route model) and the patterns nominated by
-    # association (route association, protocol §14 item 6), each with its own layers
+    # association (route association), each with its own layers
     sets = {name: _graded_set(name, path, src, mid) for name in pattern_sets.SETS}
     cids, aids = sets[pattern_sets.CANDIDATES]["ids"], sets[pattern_sets.ASSOCIATION]["ids"]
     if set(cids.tolist()) & set(aids.tolist()):
@@ -446,10 +446,6 @@ def build(config: dict, out_file: Path, *, kb_version: str, allow_missing_contex
     cards = {s.get("card_version") for s in rgi_summaries.values()}
     if len(cards) > 1:
         raise ValueError(f"organisms were annotated with different CARD versions: {cards}")
-    protocol = config["protocol"]
-    text = PROJECT_ROOT / "docs" / "V1_PROTOKOL.md"
-    if text.exists() and sha256_file(text) != protocol["sha256"]:
-        raise ValueError("config protocol.sha256 is not the checksum of docs/V1_PROTOKOL.md")
     tools: dict = {}
     rows = [{"tool": "rgi", "version": s.get("rgi_version")} for s in rgi_summaries.values()]
     for v in ext_versions:

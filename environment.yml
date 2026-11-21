@@ -1,12 +1,12 @@
 # ============================================================================
-# amr.sif — the analysis environment of KANIT v1.0 (plan F6, K9)
+# amr.sif — the analysis environment of KANIT v1.0
 # ============================================================================
 # The Python stack of every step and the tools the steps call from Python:
 # unitig-caller (Bifrost) for the unitigs, PopPUNK (graph-tool) for the lineages and
 # RGI (DIAMOND, BLAST+) for the CARD annotation. amr.def feeds it to mamba; the lock
 # file (environment.lock.yml) is exported from the built container.
 #   conda env create -f environment.yml
-# Versions: the development containers (F6.1) use these; the final containers (F6.2)
+# Versions: the development containers use these; the final containers
 # take the newest mutually compatible versions and freeze them.
 # - graph-tool is pinned on its own: PopPUNK's clustering changed when graph-tool went
 #   from 2.98 to 3.0 with PopPUNK unchanged, and the lineages define the CV groups.

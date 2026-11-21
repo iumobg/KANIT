@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The patterns nominated by association (protocol §14 item 6; lib/pattern_sets.py): the
+"""The patterns nominated by association (lib/pattern_sets.py): the
 choice of the set, its paths and the layers' tables when it is empty. The steps run on it
 in tests/test_knowledge_base.py."""
 import sys

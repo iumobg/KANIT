@@ -19,7 +19,7 @@ pytestmark = pytest.mark.unit
 
 GYRA = "Escherichia coli gyrA conferring resistance to fluoroquinolones"
 # model -> [(pattern, stable, card state, grade, AROs[, route])]; the ampicillin model's
-# pattern 9, nominated by association (protocol §14 item 6), enters no hypothesis test:
+# pattern 9, nominated by association, enters no hypothesis test:
 # its qnr hit would link ampicillin to ciprofloxacin in H3
 PATTERNS = {
     "ecoli__ciprofloxacin": [(1, True, "b", "confirmed", ["1"]), (2, True, "no_card_hit",
@@ -198,7 +198,7 @@ def _permuted(conn, flagged=()):
 
 
 def test_the_sensitivity_analysis_drops_the_flagged_models(conn):
-    """Protocol §14 item 9: without levofloxacin, H3 loses its only within-class pair and
+    """Sensitivity analysis: without levofloxacin, H3 loses its only within-class pair and
     H7 two of its confirmed determinants; the per-model results stay as they were."""
     _permuted(conn, flagged={"ecoli__levofloxacin"})
     assert hy.flagged_models(conn) == ["ecoli__levofloxacin"]

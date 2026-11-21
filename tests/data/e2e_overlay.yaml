@@ -1,4 +1,4 @@
-# End-to-end test (plan F5.3): about 60 genomes of one organism and one antibiotic, with
+# End-to-end test: about 60 genomes of one organism and one antibiotic, with
 # small R and B, on TRUBA's debug queue (4 hours). Merged over config/config.yaml by
 # --config_overlay. Every location moves under e2e/ except the reference databases.
 #   python scripts/e2e_subset.py --organism <o> --antibiotic <a> --overlay tests/data/e2e_overlay.yaml

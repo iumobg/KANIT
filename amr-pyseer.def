@@ -1,5 +1,5 @@
 Bootstrap: docker
-# The final containers (F6.2) pin the base image by digest; the development ones use the tag.
+# The final containers pin the base image by digest; the development ones use the tag.
 From: condaforge/miniforge3:latest
 # ============================================================================
 # amr-pyseer.sif — pyseer (environment-pyseer.yml)

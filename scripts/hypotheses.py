@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Hypothesis tests of the protocol (§10) on the knowledge base.
+"""Hypothesis tests on the knowledge base.
 
 Reads kb_dir/kanit.sqlite, CARD's ARO index (next to card.card_json) and, for H7
 and H6, every organism's AMRFinderPlus calls (external_dir/amrfinder_calls.csv
@@ -9,7 +9,7 @@ genome stops the run. The tests are in lib/hypotheses.py.
 
 Outputs (cross_model_dir/hypotheses/): one CSV per table and hypotheses.json with
 every criterion, statistic and verdict, and under sensitivity_label_permutation the
-same summaries without the models the label permutation flags (protocol §14 item 9).
+same summaries without the models the label permutation flags.
 """
 import argparse
 import json
@@ -103,7 +103,7 @@ def main():
           f"{s['H2']['median']}) · H3 {s['H3']['supported']} (p {s['H3']['p']}) · H7 "
           f"{s['H7'].get('0.1', {}).get('supported_primary')}"
           + (f" · no AMRFinderPlus reference for {missing}" if missing else ""))
-    print(f"Without the flagged models (§14 item 9): {sens['status']}"
+    print(f"Without the flagged models: {sens['status']}"
           + (f", {len(sens['excluded_models'])} excluded" if sens["excluded_models"] else ""))
 
 

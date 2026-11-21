@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""The checksums of the outputs at the end of a workflow run (plan F3.4).
+"""The checksums of the outputs at the end of a workflow run.
 
 Every file under the output roots, with its size, modification time and SHA-256, and
 the config location it belongs to: the paths_organism key of the most specific
 template that holds it, with the organism and antibiotic in the path. So the outputs
 of every step and model can be read from one table, and a backup can be verified
-against it (F3.5).
+against it.
 
 The roots are results/, data/processed/, data/external/ and models/. The assemblies
 under data/raw/ are left out: their checksums are in the data snapshot's

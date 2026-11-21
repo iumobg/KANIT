@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Upload and verification of a packed backup (scripts/backup.py pack; plan F3.5).
+# Upload and verification of a packed backup (scripts/backup.py pack).
 # Runs on a node with internet: on TRUBA the login node, outside the containers.
 #
 #   backup_upload.sh STAGE REMOTE RUN LEDGER

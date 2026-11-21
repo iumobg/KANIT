@@ -1,7 +1,7 @@
-// The run manifest of a KANIT workflow run (plan F3.4): written in params.trace_dir
+// The run manifest of a KANIT workflow run: written in params.trace_dir
 // when an entry workflow starts and completed when the run ends. It records the
 // run, the code commit and whether a tracked file has uncommitted changes, the
-// checksums of config.yaml, the registry, the protocol text, the containers, the
+// checksums of config.yaml, the registry, the containers, the
 // database manifest and the data snapshots, and every parameter. A checksum is
 // reused while a file's size and modification time are unchanged.
 
@@ -35,7 +35,7 @@ Map fileRecord(Path file, Map cache) {
     long mtime = Files.getLastModifiedTime(file).toMillis()
     String key = file.toAbsolutePath().toString()
     Map hit = cache[key] as Map
-    String sum = (hit && hit.bytes == bytes && hit.mtime == mtime) ? hit.sha256 : sha256(file)
+    String sum = (hit && hit.bytes == bytes && hit.mtime == mtime) ? hit.sha256: sha256(file)
     cache[key] = [bytes: bytes, mtime: mtime, sha256: sum]
     [path: file.toString(), exists: true, bytes: bytes, sha256: sum]
 }
@@ -47,7 +47,7 @@ String git(Path dir, List<String> args) {
         StringBuilder err = new StringBuilder()
         proc.consumeProcessOutput(out, err)
         proc.waitFor()
-        return proc.exitValue() == 0 ? out.toString().trim() : null
+        return proc.exitValue() == 0 ? out.toString().trim(): null
     } catch (IOException e) {
         return null
     }
@@ -61,7 +61,7 @@ Map code(Path projectDir) {
         return [commit: null, branch: null, dirty: null, changed: []]
     }
     String status = git(projectDir, ['status', '--porcelain', '--untracked-files=no']) ?: ''
-    List<String> changed = status ? status.readLines() : []
+    List<String> changed = status ? status.readLines(): []
     [commit: commit, branch: git(projectDir, ['rev-parse', '--abbrev-ref', 'HEAD']),
      dirty: !changed.isEmpty(), changed: changed]
 }
@@ -71,7 +71,7 @@ Path manifestFile(Map params) {
 }
 
 Map readJson(Path file) {
-    Files.isRegularFile(file) ? (new JsonSlurper().parse(file.toFile()) as Map) : null
+    Files.isRegularFile(file) ? (new JsonSlurper().parse(file.toFile()) as Map): null
 }
 
 void writeJson(Path file, Map data) {
@@ -87,12 +87,6 @@ Map runManifestStart(def workflow, Map params, Path projectDir, String entry, Ma
     Map paths = config.paths_organism as Map
     Closure<Path> project = { String p -> projectDir.resolve(p) }
 
-    Path protocolText = project('docs/V1_PROTOKOL.md')
-    Map protocol = [version: config.protocol?.version?.toString(),
-                    sha256 : config.protocol?.sha256?.toString(),
-                    text   : fileRecord(protocolText, cache)]
-    protocol.text_matches = protocol.text.exists ? protocol.text.sha256 == protocol.sha256 : null
-
     Map containers = null
     if (workflow.containerEngine) {
         containers = [:]
@@ -107,11 +101,11 @@ Map runManifestStart(def workflow, Map params, Path projectDir, String entry, Ma
     Map dbs = readJson(dbManifest)
     Map databases = [manifest: fileRecord(dbManifest, cache),
                      versions: dbs ? dbs.collectEntries { n, e ->
-                         [n, [version: e.version, downloaded_on: e.downloaded_on]] } : null]
+                         [n, [version: e.version, downloaded_on: e.downloaded_on]] }: null]
 
     Map snapshots = organisms.collectEntries { String org ->
         String prefix = config.paths_prefix && !((config.paths_prefix_exclude ?: []) as List).contains('metadata_file') ?
-            "${config.paths_prefix}/" : ''
+            "${config.paths_prefix}/": ''
         Path meta = project(prefix + paths.metadata_file.toString().replace('{organism}', org)).getParent()
         Path file = meta.resolve('snapshot.json')
         Map snap = readJson(file)
@@ -133,10 +127,9 @@ Map runManifestStart(def workflow, Map params, Path projectDir, String entry, Ma
         code: code(projectDir),
         config: [config_yaml: fileRecord(Paths.get(params.config_yaml.toString()), cache),
                  config_overlay: params.config_overlay ?
-                     fileRecord(Paths.get(params.config_overlay.toString()), cache) : null,
+                     fileRecord(Paths.get(params.config_overlay.toString()), cache): null,
                  organisms: fileRecord(project('config/registry/organisms.yaml'), cache),
-                 antibiotics: fileRecord(project('config/registry/antibiotics.yaml'), cache),
-                 protocol: protocol],
+                 antibiotics: fileRecord(project('config/registry/antibiotics.yaml'), cache)],
         containers: containers,
         databases: databases,
         snapshots: snapshots,
@@ -161,7 +154,7 @@ void runManifestComplete(def workflow, Map params) {
                              failed: stats?.failedCount, ignored: stats?.ignoredCount]]
     Path outputs = manifest.getParent().resolve('outputs.csv')
     run.outputs = Files.isRegularFile(outputs) ?
-        [file: outputs.toString(), sha256: sha256(outputs)] : null
+        [file: outputs.toString(), sha256: sha256(outputs)]: null
     writeJson(manifest, run)
 }
 
@@ -258,7 +251,7 @@ process SACCT_DUMP {
         sacct -P -j "\$ids" --format=JobID,JobName,Partition,State,ExitCode,Elapsed,Start,End,AllocCPUS,ReqMem,MaxRSS,TotalCPU,NodeList \\
             > '${params.trace_dir}/sacct.tsv'
     else
-        : > '${params.trace_dir}/sacct.tsv'
+: > '${params.trace_dir}/sacct.tsv'
     fi
     ${hostReceipt(task, 'sacct', workflow.runName)}
     """

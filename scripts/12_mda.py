@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """Step 12 — permutation importance (MDA) of one panel pair's candidate patterns
-(protocol §8.3).
+.
 
 The lineage-aware outer-fold models of 04 (every repeat; all must be finished)
 predict their own test folds while each candidate pattern is permuted within the
 test folds, R times; the sensitivity analysis permutes clusters of candidates
 linked by |r| ≥ mda.cluster_r together. A model that is not evaluable exits with
 status 3, as in 04. The rule is in lib/mda.py. With --set association, the same for the
-patterns nominated by association (§14 item 6), adjusted over them (lib/pattern_sets.py).
+patterns nominated by association, adjusted over them (lib/pattern_sets.py).
 
 Inputs: candidates_file, the model matrix, cv_dir. Outputs (layers_dir):
 mda.csv (the layer), mda_clusters.csv (sensitivity analysis), mda_summary.json.

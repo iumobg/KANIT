@@ -1,4 +1,4 @@
-"""Manifest of the reference databases (protocol §13).
+"""Manifest of the reference databases.
 
 CARD (RGI), AMRFinderPlus, ResFinder, PointFinder and CheckM2 are downloaded on
 the same day. Each download is recorded once, when it is made: the database's
@@ -109,6 +109,6 @@ def verify(manifest) -> list[str]:
 
 
 def same_day(manifest) -> bool:
-    """Whether every recorded database was downloaded on one day (§13)."""
+    """Whether every recorded database was downloaded on one day."""
     days = {e["downloaded_on"] for e in load(manifest).values()}
     return len(days) <= 1

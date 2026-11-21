@@ -3,7 +3,7 @@ Bootstrap: docker
 From: condaforge/miniforge3:latest
 
 # ============================================================================
-# amr-checkm2.sif — CheckM2 genome QC (ROADMAP §0.2 M15)
+# amr-checkm2.sif — CheckM2 genome QC
 # ============================================================================
 # Separate from amr-tools.sif because of CheckM2's ML stack (tensorflow 2.17 +
 # lightgbm + its own numpy/scikit-learn pins) — NOT because of a python floor.

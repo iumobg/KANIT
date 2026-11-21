@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Assembly-level genome QC — CheckM2 + QUAST (must-have M15; ROADMAP §0.2).
+"""Assembly-level genome QC — CheckM2 + QUAST.
 
 Hybrid genome QC on the raw assemblies: **CheckM2** (completeness / contamination via a machine-learning
 model over DIAMOND hits) + **QUAST** (N50, contig count, total length). This is
@@ -261,7 +261,7 @@ def main():
     ap = argparse.ArgumentParser(description="Genome assembly QC — CheckM2 + QUAST (M15).")
     ap.add_argument("--mode", choices=["prep", "post"], required=True)
     ap.add_argument("--organism", default=config.get("project", {}).get("organism", "ecoli"))
-    # Thresholds (ROADMAP §0.2): completeness >=95-99%, contamination <=5% (strict
+    # Thresholds: completeness >=95-99%, contamination <=5% (strict
     # 2-3%), N50 >=50kb, contig upper bound. Defaults are the lenient end; tighten
     # per the write-up.
     ap.add_argument("--completeness-min", type=float, default=95.0)

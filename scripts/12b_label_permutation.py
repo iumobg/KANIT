@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Step 12b — label permutation test of one panel pair (protocol §8.6), and its
+"""Step 12b — label permutation test of one panel pair, and its
 correction across models.
 
 Subcommands:

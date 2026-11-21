@@ -18,7 +18,7 @@ def test_run_report(tmp_path):
     spec.loader.exec_module(m)
     (tmp_path / "run_manifest.json").write_text(json.dumps({
         "run": {"name": "happy_turing", "entry": "main", "organisms": ["ecoli"]},
-        "code": {"commit": "abc", "dirty": False}, "config": {"protocol": {"version": "1.0"}},
+        "code": {"commit": "abc", "dirty": False}, "config": {},
         "completed": {"at": "2026-10-20T10:00:00Z"}}))
     (tmp_path / "completeness_summary.json").write_text(json.dumps({
         "complete": False, "percent_ok": 95.0, "applicable": 20,

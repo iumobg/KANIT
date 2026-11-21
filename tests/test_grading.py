@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Grading rule (lib.grading, 14b_grading.py): the protocol's truth table and the
+"""Grading rule (lib.grading, 14b_grading.py): the rule's truth table and the
 grades of both CARD modes."""
 import itertools
 import json
@@ -24,7 +24,7 @@ from lib.card_layer import (  # noqa: E402
 
 pytestmark = pytest.mark.unit
 
-# Protocol §9, all 48 combinations, written out by hand.
+# The grading rule, all 48 combinations, written out by hand.
 # prevalence mda cpss pyseer | b = 1 | CARD hit without b | no CARD hit
 TRUTH = """
 0000 candidate none      none
@@ -63,7 +63,7 @@ def test_truth_table_covers_all_48_combinations():
 
 
 @pytest.mark.parametrize("state,passed,expected", list(_truth()))
-def test_grade_follows_the_protocol_table(state, passed, expected):
+def test_grade_follows_the_rule_table(state, passed, expected):
     assert gr.grade(state, passed) == expected
 
 

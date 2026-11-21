@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The grades against CARD's RGI tier (scripts/lib/card_tiers.py, protocol §14 item 10)."""
+"""The grades against CARD's RGI tier (scripts/lib/card_tiers.py)."""
 import importlib.util
 import sys
 from pathlib import Path

@@ -62,7 +62,7 @@ def test_params_apply_e3_range_to_every_organism(mod):
 
 
 def test_staph_overrides_sketch_size(mod):
-    """S. aureus is the panel's most clonal species — E3 §4 requires a 10^5 sketch
+    """S. aureus is the panel's most clonal species — it needs a 10^5 sketch
     to separate strains the 10^4 default would collapse."""
     from lib.config import load_config
     cfg = load_config()

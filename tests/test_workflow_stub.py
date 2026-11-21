@@ -37,7 +37,7 @@ def test_default_entry_reaches_every_step(tmp_path):
     assert n["CV_UNITS"] == 3 * 13 and n["LP_CHUNKS"] == 3 * 13 and n["CPSS_CHUNK"] == 3 * 1
     for p in ("PANEL", "GRADING", "LP_ACROSS", "EXTERNAL_COMPARE", "CARD_LAYER", "PYSEER_POST"):
         assert n.get(p), p
-    # the patterns nominated by association (protocol §14 item 6): every layer and the
+    # the patterns nominated by association: every layer and the
     # grades of every model again
     for p in ("ASSOCIATION_SET", "PREVALENCE_ASSOCIATION", "MDA_ASSOCIATION",
               "CARD_LAYER_ASSOCIATION", "GRADING_ASSOCIATION"):
@@ -52,7 +52,7 @@ def test_default_entry_reaches_every_step(tmp_path):
     run = json.loads((tmp_path / "trace" / "run_manifest.json").read_text())
     assert run["run"]["entry"] == "main" and run["run"]["stub"] is True
     assert len(run["code"]["commit"]) == 40 and run["completed"]["success"] is True
-    assert run["config"]["config_yaml"]["sha256"] and run["config"]["protocol"]["version"] == "1.0"
+    assert run["config"]["config_yaml"]["sha256"]
     assert set(run["snapshots"]) == {"ecoli", "kpneumoniae"}
     receipts = list((tmp_path / "trace" / "tasks").glob("*/*/receipt.json"))
     assert len(receipts) == len(t)
@@ -141,7 +141,7 @@ def test_a_retry_runs_fewer_units_at_once(tmp_path):
         'sleep 1; rm -f "$S/run_$u"; touch "$S/done_$u"\n')
     (tmp_path / "main.nf").write_text(
         f"include {{ parallel }} from '{PROJECT_ROOT}/modules/local/common'\n"
-        "process P {\n  cpus 4\n  errorStrategy { task.attempt <= 3 ? 'retry' : 'terminate' }\n"
+        "process P {\n  cpus 4\n  errorStrategy { task.attempt <= 3 ? 'retry': 'terminate' }\n"
         "  maxRetries 3\n  output: path 'done.txt'\n  script:\n  \"\"\"\n"
         "  ${parallel(task, [1, 2, 3, 4], { u -> \"bash ${projectDir}/unit.sh ${u}\" })}\n"
         "  echo ok > done.txt\n  \"\"\"\n}\nworkflow { P() }\n")

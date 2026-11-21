@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Figures, model reports and the numbers file (plan F4.2), from the steps' CSV tables.
+"""Figures, model reports and the numbers file, from the steps' CSV tables.
 
   reports.py --entry main --organisms ecoli,kpneumoniae
 
 At the end of every entry it draws the QC figure of every step whose tables exist
-(lib/figures.py; Appendix C), writes for every panel model a self-contained HTML
+ (lib/figures.py), writes for every panel model a self-contained HTML
 report (data, cross-validation, label permutation, evidence layers, grades, the best
-candidates, apart from them the patterns nominated by association (protocol §14 item 6),
+candidates, apart from them the patterns nominated by association,
 the comparison with genotype-based tools and the model's figures), and
 rewrites tez_sayilari.csv: every number the thesis and the article quote, with the
 table and column it comes from. A figure whose table is missing is skipped and named
@@ -255,8 +255,7 @@ def model_report(t: Tables, org: str, ab: str, figs: list[tuple[str, Path]], out
              "<h2>Grades</h2>", _table(counts),
              "<h2>Best candidates</h2>", _table(best),
              "<h2>Patterns nominated by association (secondary analysis)</h2>",
-             "<p class='meta'>pyseer-significant patterns that are not candidates (protocol "
-             "§14 item 6). They pass the pyseer layer by the way they are chosen, so their "
+             "<p class='meta'>pyseer-significant patterns that are not candidates. They pass the pyseer layer by the way they are chosen, so their "
              "grades are not comparable with those of the candidates.</p>",
              _table(assoc_counts), _table(assoc_best),
              "<h2>Genotype-based prediction</h2>", _table(ext), "<h2>Figures</h2>"]
@@ -436,8 +435,8 @@ def _evidence_numbers(ev: pd.DataFrame, put) -> None:
                     "grade", f"Share (0-1) of this {label}'s candidates graded {g}")
 
 
-# hypotheses.json (protocol §10) -> keys. A key names what its test measures, not the
-# test's number: the protocol's H3 and H7 are the article's H4 and H3, so a number in the
+# hypotheses.json -> keys. A key names what its test measures, not the
+# test's number: the code's H3 and H7 are the article's H4 and H3, so a number in the
 # key would be right for one text and wrong for the other.
 # (summary, field, key, table, column, description)
 HYPOTHESIS_KEYS = [
@@ -455,17 +454,17 @@ HYPOTHESIS_KEYS = [
     ("H2", "supported", "curated.supported", "h2_models", "share_b_allele_aware",
      "H2: 1 if the median is at least 0.40, else 0"),
     ("H3", "n_within", "class_overlap.n_within", "h3_pairs", "same_class",
-     "Protocol H3: within-class model pairs with a defined overlap"),
+     "H3: within-class model pairs with a defined overlap"),
     ("H3", "n_cross", "class_overlap.n_cross", "h3_pairs", "same_class",
-     "Protocol H3: cross-class model pairs with a defined overlap"),
+     "H3: cross-class model pairs with a defined overlap"),
     ("H3", "median_within", "class_overlap.median_within", "h3_pairs", "overlap",
-     "Protocol H3: median overlap coefficient of the within-class pairs"),
+     "H3: median overlap coefficient of the within-class pairs"),
     ("H3", "median_cross", "class_overlap.median_cross", "h3_pairs", "overlap",
-     "Protocol H3: median overlap coefficient of the cross-class pairs"),
+     "H3: median overlap coefficient of the cross-class pairs"),
     ("H3", "p", "class_overlap.p", "h3_pairs", "overlap",
-     "Protocol H3: one-sided Mann-Whitney U p, within-class above cross-class"),
+     "H3: one-sided Mann-Whitney U p, within-class above cross-class"),
     ("H3", "supported", "class_overlap.supported", "h3_pairs", "overlap",
-     "Protocol H3: 1 if p < 0.05, else 0"),
+     "H3: 1 if p < 0.05, else 0"),
     ("H6", "n_acquired", "acquired_vs_mutational.n_acquired", "h6_models", "class",
      "H6 (explanatory): acquired phenotypes with an H2 share"),
     ("H6", "n_mutational", "acquired_vs_mutational.n_mutational", "h6_models", "class",
@@ -475,7 +474,7 @@ HYPOTHESIS_KEYS = [
     ("H6", "p_acquired_gt_mutational", "acquired_vs_mutational.p", "h6_models", "h2_share",
      "H6 (explanatory): one-sided Mann-Whitney U p, acquired above mutational"),
 ]
-# protocol H7 at each threshold of expected prevalence among the resistant genomes
+# H7 at each threshold of expected prevalence among the resistant genomes
 EXPECTED_THRESHOLDS = {"0.1": "thr10", "0.05": "thr5", "0.2": "thr20"}
 EXPECTED_KEYS = [
     ("n_expected", "n_expected", "expected determinants"),
@@ -512,24 +511,24 @@ def _hypothesis_numbers(summary: dict, put, pre: str, label: str = "") -> None:
             x = val(s.get(field))
             p_value = field == "secondary_p"
             put(f"{pre}.expected.{key}.{tag}", _four_significant(x) if p_value else x,
-                "h7_determinants", "best_grade", f"{label}Protocol H7, threshold {thr}: {text}",
+                "h7_determinants", "best_grade", f"{label}H7, threshold {thr}: {text}",
                 digits=None if p_value else 6 if field == "share_confirmed" else "auto")
         table = s.get("secondary_table")
         if table:
             for (i, j), key, text in SECONDARY_CELLS:
                 put(f"{pre}.expected.secondary_{key}.{tag}", int(table[i][j]), "h7_determinants",
-                    "best_grade", f"{label}Protocol H7, threshold {thr}: {text}")
+                    "best_grade", f"{label}H7, threshold {thr}: {text}")
             for row, who in ((0, "expected"), (1, "other")):
                 n = int(table[row][0]) + int(table[row][1])
                 if n:
                     put(f"{pre}.expected.secondary_share_{who}_confirmed.{tag}", int(table[row][0]) / n,
                         "h7_determinants", "best_grade",
-                        f"Share (0-1) {label}Protocol H7, threshold {thr}: confirmed among the "
+                        f"Share (0-1) {label}H7, threshold {thr}: confirmed among the "
                         f"candidates {'of an expected determinant' if row == 0 else 'with another CARD hit'}")
 
 
 def _flagged_models(lp: pd.DataFrame, models: list[str], alpha: float) -> list[str] | None:
-    """Models whose label permutation q is at or above α (§8.6); None unless every model
+    """Models whose label permutation q is at or above α; None unless every model
     has its row, since the q values are corrected across all of them."""
     if "q" not in lp:
         return None
@@ -540,7 +539,7 @@ def _flagged_models(lp: pd.DataFrame, models: list[str], alpha: float) -> list[s
 
 
 def _permutation_sensitivity(ev: pd.DataFrame, flagged: list[str], put) -> None:
-    """Protocol §14 item 9: the grade distribution without the flagged models, and the
+    """Sensitivity analysis: the grade distribution without the flagged models, and the
     layers each flagged model's candidates pass (an illustration, not a test). The grades
     of a flagged model are its {model}.n_{grade} keys. The hypotheses are recomputed in
     hypotheses.json."""
@@ -616,7 +615,7 @@ def _b_aros(units: pd.DataFrame | None) -> set[str]:
 
 def card_tier_table(t: Tables, models: list[tuple[str, str]]) -> pd.DataFrame:
     """The candidates with a CARD hit of every model, with the RGI tier of their hits
-    (protocol §14 item 10). Empty when no organism has its hit table."""
+. Empty when no organism has its hit table."""
     return card_tiers.collect(t.get, models)
 
 
@@ -624,7 +623,7 @@ def _card_tier_numbers(table: pd.DataFrame, put) -> None:
     src = "grades_unitigs"
     tiered = table[table["tier"].notna() & table["group"].notna()]
     put("card_tier.n_patterns", len(tiered), src, "located_genomes",
-        "Candidates with a CARD hit and an RGI tier (§14 item 10)")
+        "Candidates with a CARD hit and an RGI tier")
     put("card_tier.n_patterns_without_tier", int(table["tier"].isna().sum()), src,
         "located_genomes", "Candidates with a CARD hit whose every (genome, ARO) pair is "
         "ambiguous or has no hit")
@@ -2070,10 +2069,10 @@ def numbers(t: Tables, organisms: list[str]) -> pd.DataFrame:
                     f"Median paired difference in balanced accuracy, model minus {tool}")
                 put(f"{pre}_diff_ci_low", pd_["ci_low"], "external_comparison",
                     "balanced_accuracy",
-                    "Lower 95% bound of that difference, organism-clustered bootstrap (§6.3)")
+                    "Lower 95% bound of that difference, organism-clustered bootstrap")
                 put(f"{pre}_diff_ci_high", pd_["ci_high"], "external_comparison",
                     "balanced_accuracy",
-                    "Upper 95% bound of that difference, organism-clustered bootstrap (§6.3)")
+                    "Upper 95% bound of that difference, organism-clustered bootstrap")
                 put(f"{pre}_n_organisms", pd_["n_clusters"], "external_comparison", "model_id",
                     f"Organisms contributing a pair shared with {tool}")
                 put(f"{pre}_p_signed_rank",
@@ -2102,7 +2101,7 @@ def numbers(t: Tables, organisms: list[str]) -> pd.DataFrame:
             "Models whose label permutation q is below α")
         put("label_permutation.n_flagged", int((lp["q"] >= float(
             t.config["label_permutation"]["alpha"])).sum()), "label_permutation_models", "q",
-            "Models whose q is at or above α: flagged, kept in every analysis (§8.6)")
+            "Models whose q is at or above α: flagged, kept in every analysis")
     hyp = t.json("cross_model_dir", "hypotheses/hypotheses.json")
     if hyp is not None:
         _hypothesis_numbers(hyp, put, "hyp")
@@ -2112,7 +2111,7 @@ def numbers(t: Tables, organisms: list[str]) -> pd.DataFrame:
         sens = hyp.get("sensitivity_label_permutation") or {}
         if sens.get("status") == "computed":
             put("lp_sensitivity.hyp.n_models_excluded", len(sens["excluded_models"]),
-                "h1_models", "model_id", "Models the hypotheses are recomputed without (§14 item 9)")
+                "h1_models", "model_id", "Models the hypotheses are recomputed without")
             _hypothesis_numbers(sens, put, "lp_sensitivity.hyp", "Without the flagged models. ")
     try:
         kb: Path | None = contract.output_path("kb_dir", "kanit.sqlite", t.config)

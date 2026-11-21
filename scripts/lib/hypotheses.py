@@ -1,12 +1,12 @@
-"""Hypotheses of the protocol (§10): H1, H2, H3, H7 and the explanatory H6.
+"""The hypothesis tests: H1, H2, H3, H7 and the explanatory H6.
 
 Every test reads the knowledge base (build_kb.py), only the candidates (route
-``model``): the patterns nominated by association (§14 item 6) enter no hypothesis
+``model``): the patterns nominated by association enter no hypothesis
 test. H7 and H6 also read the AMRFinderPlus calls of the genomes, the reference that is
 curated independently
 of CARD (step 16 writes them: one row per call with genome_id, element_symbol,
 type, subtype, scope, class, subclass, and the list of analysed genomes). The
-criteria are the protocol's.
+criteria were set before the analysis.
 
 AMRFinderPlus symbols are mapped to CARD AMR gene families through CARD's ARO
 index: the normalised symbol (lower case, without "bla" and punctuation) equal to
@@ -15,7 +15,7 @@ otherwise the one family shared by every ARO that extends the allele-less symbol
 with an allele number; van cluster genes (vanH-A) through CARD's cluster terms.
 Unmapped symbols are reported with their counts.
 
-The sensitivity analysis of protocol §14 item 9 runs every test again without the
+The sensitivity analysis runs every test again without the
 models the label permutation flags (sensitivity()).
 """
 from __future__ import annotations
@@ -31,7 +31,7 @@ from scipy.stats import fisher_exact, hypergeom, mannwhitneyu
 
 GRADE_RANK = {"confirmed": 4, "strong_novel": 3, "candidate": 2, "weak": 1, "none": 0}
 MUTATION_MODELS = ("variant", "overexpression", "rrna_variant")
-PERMUTATION_FLAG = "permutation_not_significant"     # label_permutation.flag, §8.6
+PERMUTATION_FLAG = "permutation_not_significant"     # label_permutation.flag
 
 
 def _param(conn, name) -> float:
@@ -260,7 +260,7 @@ def model_patterns(conn, mid: str) -> pd.DataFrame:
 
 
 def matches(det: str, families: set[str], mutation_aros: list[str]) -> bool:
-    """Whether a pattern maps to a determinant (§10 H7)."""
+    """Whether a pattern maps to a determinant."""
     if det.startswith("FAM:"):
         return det[4:] in families
     gene = re.escape(det[5:])
@@ -387,9 +387,9 @@ def run(conn: sqlite3.Connection, reference, idx, keywords, *, n_mc: int, seed: 
             "summary": {"H1": s1, "H2": s2, "H3": s3, "H7": s7, "H6": s6}}
 
 
-# ---- protocol §14 item 9 -------------------------------------------------------------
+# ---- sensitivity analysis without the flagged models ---------------------------------
 def flagged_models(conn) -> list[str] | None:
-    """Evaluable models the label permutation flags (q >= alpha, §8.6); None while one of
+    """Evaluable models the label permutation flags (q >= alpha); None while one of
     them has no test, since the q values are corrected across all of them."""
     rows = conn.execute(
         "SELECT m.model_id, lp.flag FROM model m LEFT JOIN label_permutation lp "
@@ -401,7 +401,7 @@ def flagged_models(conn) -> list[str] | None:
 
 def sensitivity(conn: sqlite3.Connection, reference, idx, keywords, *, n_mc: int,
                 seed: int) -> dict:
-    """The hypotheses again without the flagged models (protocol §14 item 9), reported
+    """The hypotheses again without the flagged models, reported
     next to the primary results. The per-model rows are those of the primary tables; only
     the summaries change, and H3 through the families of each organism's models."""
     excluded = flagged_models(conn)

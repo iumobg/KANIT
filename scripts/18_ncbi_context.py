@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Step 18 — genomic context of an organism's candidate unitigs from NCBI
-(protocol §12). Context is not evidence: no grade depends on it.
+. Context is not evidence: no grade depends on it.
 
 Subcommands:
 

@@ -13,7 +13,7 @@
 #   amrfinder_organism  AMRFinderPlus --organism (enables its point mutations; step 16)
 #   resfinder_species   ResFinder -s (selects its PointFinder database; step 16)
 #   taxids              NCBI taxonomy IDs of the organism: its genomes are the BV-BRC
-#                       genomes at or below these taxa (protocol §2.1)
+#                       genomes at or below these taxa
 #   species_names       NCBI scientific names of the taxids, in the same order (species
 #                       level); matched against the species of external data (CABBAGE)
 #   gram_stain, phylum  reference data for the knowledge base
@@ -57,8 +57,7 @@ organisms:
     # pair in the repo is A. baumannii — poppunk_clusters_s1e5.csv 61 lineages /
     # largest 76.4% vs poppunk_clusters_bgmm.csv 59 / 76.3% — i.e. 10^5 changed
     # almost nothing there (fit model not controlled, so not conclusive either).
-    # The old rationale cited docs/literature/E3.md §4, which traces back to the
-    # PopPUNK paper; that paper gives 10^5 for M. tuberculosis, not for S. aureus.
+    # The PopPUNK paper gives 10^5 for M. tuberculosis, not for S. aureus.
     # Keep 10^5 for continuity with the delivered labels, not because a source requires it.
     lineage:
       sketch_size: 100000
@@ -71,7 +70,7 @@ organisms:
     species_names: ["Acinetobacter baumannii"]
     gram_stain: negative
     phylum: Pseudomonadota
-    # PopPUNK (docs/literature/E3.md §5): A. baumannii needs no special model or
+    # PopPUNK: A. baumannii needs no special model or
     # sketch tuning — defaults resolve GC1/GC2 well — EXCEPT a length filter
     # narrowed to its genome size (~3.9 Mb), because its extreme plasmid/integron
     # plasticity makes contamination easy to mistake for accessory content.
@@ -91,8 +90,8 @@ organisms:
     lineage:
       refine: true
     # length_range NOT SET, but now derivable: genomes ARE downloaded (2026-07-16),
-    # so the observed assembly-length distribution can be measured (E3 §5 wants it
-    # narrowed to ~3.9 Mb). Left empty until measured rather than guessed; the
+    # so the observed assembly-length distribution can be measured (literature suggests
+    # ~3.9 Mb). Left empty until measured rather than guessed; the
     # global `length_sigma: 5` filters length outliers adaptively meanwhile, so
     # this is a refinement, not a blocker.
 

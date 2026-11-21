@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Unit tests for the shared library (SCALE_MLOPS_PLAN.md §7.5).
+Unit tests for the shared library.
 
 Run with:
     pytest tests/

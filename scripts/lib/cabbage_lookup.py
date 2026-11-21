@@ -1,6 +1,6 @@
 """KANIT lookup on the external isolates (CABBAGE): the knowledge base used as a catalogue.
 
-Added during the study (2026-11-13), next to the final models' predictions of §14 item 4; the
+Added during the study (2026-11-13), next to the final models' predictions; the
 rule was fixed before any lookup result was computed.
 
 A marker is a graded candidate pattern of a model, of grade ``weak`` or better (primary,

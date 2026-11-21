@@ -1,4 +1,4 @@
-"""Label permutation test of a model (protocol §8.6).
+"""Label permutation test of a model.
 
 The first repeat of the lineage-aware arm: in each of R permutations the labels
 are permuted over all genomes of the model, and the outer-fold models are
@@ -9,7 +9,7 @@ ROC-AUC. p = (1 + #{null AUC ≥ observed AUC}) / (R + 1), z = (observed − nul
 mean) / null SD, Benjamini–Hochberg across models; a model with q ≥ alpha is
 flagged permutation_not_significant and stays in every analysis.
 Hyperparameters and numbers of trees are not searched again (a known
-limitation of the protocol).
+limitation).
 
 Permutation b is seeded by (seed, b), so permutations are computed in any order:
 a task is one chunk of permutations of one fold. Each fold's XGBoost matrix is

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verified backup of the results tree at the end of every stage (plan F3.5).
+"""Verified backup of the results tree at the end of every stage.
 
 The tree is cut into units: every directory two levels under a root (for example
 results/ecoli/ampicillin, data/processed/ecoli/unitig_store, data/raw/ecoli/genomes)
