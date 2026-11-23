@@ -95,6 +95,28 @@ The knowledge base can be browsed locally with a Streamlit explorer:
 streamlit run scripts/kb_app.py -- --db results/kb/package/kanit.sqlite
 ```
 
+### Searching an isolate
+
+An assembly can be searched for every biomarker of its organism, from the explorer's *Genome
+search* page or from the command line. The member unitigs of the graded patterns are matched
+exactly on either strand. A pattern counts as present when at least half of its members are
+found. An antibiotic is called resistant when the assembly carries a resistant-direction marker
+of the rule; the default rule counts markers up to `strong_novel`.
+
+```bash
+python scripts/kanit_search.py --genome isolate.fna --organism ecoli --db results/kb/package/kanit.sqlite
+```
+
+The report (`report.html`) contains:
+- the calls;
+- the markers found per antibiotic;
+- a circular genome map;
+- the neighbourhoods of the resistant-direction markers.
+
+`--annotate full` adds the genes of each neighbourhood (Bakta) and the class of each contig
+(MOB-suite or geNomad), from the tools or from their finished output. A call is a research result,
+not a susceptibility test result.
+
 ## Repository layout
 
 | Path | Contents |

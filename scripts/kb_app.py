@@ -4,8 +4,10 @@ KANIT explorer: a local, interactive interface to the knowledge base (kanit.sqli
 
 Choose an organism–antibiotic model to see its performance, its evidence-graded
 biomarkers, the evidence chain of each biomarker, its genomic context in NCBI and its
-sequences. Search by gene or product name, unitig identifier or DNA sequence. When the
-CABBAGE results are available, the comparison on independent isolates is shown as well.
+sequences. Search by gene or product name, unitig identifier or DNA sequence, or upload an
+assembly to search it for every biomarker of its organism (lib/genome_search.py; the same
+search as scripts/kanit_search.py, which adds the full annotation of the neighbourhoods).
+When the CABBAGE results are available, the comparison on independent isolates is shown as well.
 
 Runs locally (not part of the workflow):
     pip install streamlit pandas altair
@@ -21,6 +23,7 @@ import glob
 import json
 import os
 import sqlite3
+import sys
 from pathlib import Path
 
 import altair as alt
@@ -30,6 +33,10 @@ import streamlit as st
 st.set_page_config(page_title="KANIT", layout="wide")
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
+from lib import genome_report as gr  # noqa: E402
+from lib import genome_search as gs  # noqa: E402
+
 _ap = argparse.ArgumentParser()
 _ap.add_argument("--db", default=os.environ.get("KANIT_DB", str(PROJECT_ROOT / "results" / "kb" / "kanit.sqlite")))
 _ap.add_argument("--results", default=os.environ.get("KANIT_RESULTS"))
@@ -131,7 +138,7 @@ st.title("KANIT: Knowledgebase for Antimicrobial Resistance from machine-learned
          "Integrated evidence Tiering")
 st.caption("An evidence-graded knowledge base of machine-learned AMR biomarkers in the ESKAPEE pathogens")
 # One page instead of tabs: tables in hidden tabs measure their width wrongly.
-PAGES = ["Overview", "Model", "Biomarker", "Search", "Independent isolates (CABBAGE)"]
+PAGES = ["Overview", "Model", "Biomarker", "Search", "Genome search", "Independent isolates (CABBAGE)"]
 PAGE = st.radio("Section", PAGES, horizontal=True, label_visibility="collapsed", key="page")
 st.divider()
 
@@ -360,7 +367,66 @@ if PAGE == "Search":
         else:
             st.info("No results.")
 
-# --- 5. independent isolates ------------------------------------------------------------------
+# --- 5. genome search -------------------------------------------------------------------------
+@st.cache_data(show_spinner="Searching the assembly…", max_entries=8)
+def genome_search(db_path: str, data: bytes, organism: str, rule: str):
+    with connect(db_path) as conn:
+        return gs.search(conn, gs.read_assembly(data), organism, rule)
+
+
+if PAGE == "Genome search":
+    st.caption("Upload an assembly of one isolate. Every biomarker of its organism's models is searched in "
+               "it by exact match on either strand; an antibiotic is called resistant when the assembly "
+               "carries a resistant-direction biomarker of the rule. Research use only: a call is not a "
+               "susceptibility test result.")
+    up = st.file_uploader("Assembly (FASTA, plain or gzip)", type=["fna", "fa", "fasta", "fas", "gz"])
+    c = st.columns(2)
+    g_org = c[0].selectbox("Organism of the isolate", orgs, index=orgs.index(org),
+                           format_func=lambda o: ORG_NAME.get(o, o), key="g_org")
+    g_rule = c[1].selectbox("Rule", list(gs.RULES), index=list(gs.RULES).index(gs.DEFAULT_RULE),
+                            format_func=lambda r: SEARCH_NAME.get(r, r), key="g_rule")
+    if up is not None:
+        try:
+            res = genome_search(DB, up.getvalue(), g_org, g_rule)
+        except ValueError as e:
+            st.error(str(e))
+            st.stop()
+        n_r = int((res.calls.call == "R").sum())
+        m = st.columns(4)
+        m[0].metric("Contigs", len(res.contigs))
+        m[1].metric("Bases", f"{int(res.contigs.length.sum()):,}")
+        m[2].metric("Biomarkers found", int(res.markers.present.sum()))
+        m[3].metric("Called resistant", f"{n_r} of {len(res.calls)}")
+        calls = res.calls.assign(antibiotic=res.calls.antibiotic_id.map(ab_name))
+        st.subheader("Calls")
+        st.dataframe(calls[["antibiotic", "drug_class", "call", "n_markers_rule", "n_markers_r", "n_markers_s",
+                            "evidence"]].sort_values(["call", "drug_class"]),
+                     hide_index=True, use_container_width=True)
+        win = gr.windows(res.hits, res.contigs)
+        figs = {"signature": gr.signature(res.markers, res.calls, ab_name),
+                "map": gr.genome_map(res.contigs, res.hits),
+                "neighbourhood": gr.neighbourhoods(res.hits, res.contigs, win)}
+        svgs = {k: gr.svg(f) for k, f in figs.items()}       # before the page draws them
+        for title, key in (("Biomarkers by antibiotic", "signature"), ("Genome map", "map"),
+                           ("Neighbourhoods of resistant-direction biomarkers", "neighbourhood")):
+            if figs[key] is not None:
+                st.subheader(title)
+                st.pyplot(figs[key], use_container_width=key != "map", clear_figure=False)
+        st.subheader("Biomarkers found")
+        st.dataframe(res.hits.assign(antibiotic=res.hits.antibiotic_id.map(ab_name))[
+                         ["antibiotic", "grade", "direction", "card_genes", "context_gene", "context_product",
+                          "context_plasmid_share", "contig", "start", "end", "strand", "pattern_id", "unitig_id"]],
+                     hide_index=True, use_container_width=True)
+        html_report = gr.report_html(res, up.name, ORG_NAME.get(g_org, g_org), svgs,
+                                     "Knowledge base only; the full annotation of the neighbourhoods is "
+                                     "available from scripts/kanit_search.py.", ab_name)
+        d = st.columns(2)
+        d[0].download_button("Download the report (HTML)", html_report, file_name=f"kanit_{up.name}.html",
+                             mime="text/html")
+        d[1].download_button("Download the calls (CSV)", res.calls.to_csv(index=False),
+                             file_name=f"kanit_{up.name}_calls.csv", mime="text/csv")
+
+# --- 6. independent isolates ------------------------------------------------------------------
 if PAGE == "Independent isolates (CABBAGE)":
     rd = results_directory(db)
     comparison, search = cabbage(str(rd)) if rd else (pd.DataFrame(), pd.DataFrame())

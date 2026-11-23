@@ -16,9 +16,9 @@ import numpy as np
 import pandas as pd
 from sklearn.metrics import average_precision_score
 
+from lib.cabbage_lookup import PRESENT_SHARE
 from lib.oof_metrics import _auc
 
-PRESENT_SHARE = 0.5                     # a pattern needs at least half of its members
 COMPLETENESS_MIN, CONTAMINATION_MAX = 95.0, 5.0     # CheckM2, as for the panel genomes
 METRICS = ["roc_auc", "pr_auc", "pr_auc_baseline", "balanced_accuracy", "sensitivity",
            "specificity", "very_major_error_rate", "major_error_rate"]

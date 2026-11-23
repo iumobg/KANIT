@@ -7,8 +7,8 @@ A marker is a graded candidate pattern of a model, of grade ``weak`` or better (
 allele-aware mode), with the direction of its prevalence difference: ``R`` when it is more
 frequent in the resistant genomes, ``S`` when in the susceptible ones. An isolate is called
 resistant by a rule when it carries at least one ``R`` marker of the rule; a pattern is
-present in an isolate when at least half of its member unitigs are (as for the models,
-lib/cabbage_predict.PRESENT_SHARE).
+present in an isolate when at least half of its member unitigs are (PRESENT_SHARE, as for
+the models, lib/cabbage_predict).
 
 Rules:
   upto_<grade>  the R markers graded <grade> or better (confirmed > strong_novel >
@@ -27,6 +27,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
+PRESENT_SHARE = 0.5      # a pattern is present when at least half of its member unitigs are
 GRADES = ("confirmed", "strong_novel", "candidate", "weak")      # strictest first
 UPTO = tuple(f"upto_{g}" for g in GRADES)
 RULES = UPTO + ("b1",)
