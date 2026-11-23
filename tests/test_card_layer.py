@@ -74,6 +74,15 @@ def test_card_drug_classes_follow_the_registry():
     assert registry.card_drug_classes("not_a_drug") == set()
 
 
+def test_card_drug_classes_of_a_single_folate_drug_are_its_own():
+    """sul genes do not confer trimethoprim resistance, nor dfr genes sulfonamide resistance;
+    the combination keeps both terms."""
+    assert registry.card_drug_classes("trimethoprim") == {"diaminopyrimidine antibiotic"}
+    assert registry.card_drug_classes("sulfamethoxazole") == {"sulfonamide antibiotic"}
+    assert registry.card_drug_classes("trimethoprim_sulfamethoxazole") == {
+        "diaminopyrimidine antibiotic", "sulfonamide antibiotic"}
+
+
 # ---------------------------------------------------------------------------
 # real RGI 6.0.8 / CARD 4.0.1 rows (E. coli 562.100405): gyrA and parC variant
 # models (+ and - strand), CTX-M-27, soxS overexpression without a mutation, AcrF

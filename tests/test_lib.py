@@ -210,6 +210,19 @@ def test_validate_registry_rejects_a_class_without_card_terms(monkeypatch):
     assert any("unknown class 'deadclass'" in e for e in errors), errors
 
 
+def test_validate_registry_rejects_a_drug_override_outside_its_class(monkeypatch):
+    """A single drug's own CARD terms must be a registered drug and narrow its class's terms."""
+    vr = _validate_registry_module()
+    doc = dict(registry._antibiotics_doc())
+    doc["card_drug_classes_antibiotic"] = {"trimethoprim": ["fluoroquinolone antibiotic"],
+                                           "not_a_drug": ["x"]}
+    monkeypatch.setattr(vr.registry, "_antibiotics_doc", lambda: doc)
+    errors, warnings = [], []
+    vr._check_registry(errors, warnings)
+    assert any("'trimethoprim' is empty or not within class" in e for e in errors), errors
+    assert any("unknown antibiotic 'not_a_drug'" in e for e in errors), errors
+
+
 def test_validate_registry_checks_taxids(monkeypatch):
     """Every organism lists its taxa; a taxon belongs to one organism only."""
     vr = _validate_registry_module()

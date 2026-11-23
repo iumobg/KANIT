@@ -251,6 +251,14 @@ card_drug_classes:
   lipopeptides: [peptide antibiotic]
   fusidanes: [fusidane antibiotic]
 
+# A single drug of a class whose CARD terms cover more than one drug: its own CARD
+# term only. Sulfonamide resistance genes (sul) do not confer trimethoprim
+# resistance and dfr genes do not confer sulfonamide resistance; both are often
+# co-carried on one integron. The combination keeps the class's terms.
+card_drug_classes_antibiotic:
+  trimethoprim: [diaminopyrimidine antibiotic]
+  sulfamethoxazole: [sulfonamide antibiotic]
+
 # ============================================================================
 # LABELS THAT ARE NOT A SINGLE DRUG (never modelled — lib.panel)
 # ============================================================================

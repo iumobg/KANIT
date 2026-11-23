@@ -53,6 +53,15 @@ def _check_registry(errors: list[str], warnings: list[str]) -> None:
     for cid in card_map:
         if cid not in classes:
             errors.append(f"card_drug_classes lists unknown class '{cid}'")
+    # a single drug's own terms narrow its class's terms and never add to them
+    for ab, terms in (doc.get("card_drug_classes_antibiotic", {}) or {}).items():
+        cid = seen.get(str(ab).lower())
+        if cid is None:
+            errors.append(f"card_drug_classes_antibiotic lists unknown antibiotic '{ab}'")
+            continue
+        extra = {str(t).lower() for t in terms or []} - {str(t).lower() for t in card_map.get(cid, [])}
+        if not terms or extra:
+            errors.append(f"card_drug_classes_antibiotic for '{ab}' is empty or not within class '{cid}'")
 
     # 1b) a label that is not a single drug is never also a class member
     for label in (doc.get("not_single_drugs", []) or []):
