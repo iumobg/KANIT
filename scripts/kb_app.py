@@ -50,8 +50,7 @@ GRADE_MEANING = {
                  "(with the reason), or no CARD hit but the layers do not make the strong_novel combination",
     "weak": "no concordance and exactly one layer passes",
     "none": "no layer passes; no evidence beyond the model's importance ranking"}
-TOOL_NAME = {"amrfinderplus": "AMRFinderPlus", "resfinder": "ResFinder", "rgi_all": "RGI (all hits)",
-             "rgi_without_near_universal": "RGI (without near-universal genes)", "model": "KANIT model"}
+TOOL_NAME = {"amrfinderplus": "AMRFinderPlus", "resfinder": "ResFinder", "model": "KANIT model"}
 SEARCH_NAME = {"upto_confirmed": "KANIT search: confirmed only",
                "upto_strong_novel": "KANIT search: up to strong_novel (primary)",
                "upto_candidate": "KANIT search: up to candidate", "upto_weak": "KANIT search: up to weak",

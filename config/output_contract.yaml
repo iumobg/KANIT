@@ -579,7 +579,7 @@ tables:
     min_rows: 1
     fields:
       - {name: model_id, type: string, required: true, description: "organism__antibiotic"}
-      - {name: tool, type: string, required: true, enum: [amrfinderplus, resfinder, rgi_all, rgi_without_near_universal, model], description: "Predictor"}
+      - {name: tool, type: string, required: true, enum: [amrfinderplus, resfinder, model], description: "Predictor"}
       - {name: assessable, type: integer, required: true, enum: [0, 1], description: "The predictor covers the antibiotic"}
       - {name: n, type: integer, description: "Genomes"}
       - {name: n_resistant, type: integer, description: "Resistant genomes"}
@@ -805,7 +805,7 @@ tables:
     primary_key: [model_id, tool]
     fields:
       - {name: model_id, type: string, required: true, description: "organism__antibiotic"}
-      - {name: tool, type: string, required: true, enum: [amrfinderplus, resfinder, rgi_all, rgi_without_near_universal, model], description: "Predictor"}
+      - {name: tool, type: string, required: true, enum: [amrfinderplus, resfinder, model], description: "Predictor"}
       - {name: assessable, type: integer, required: true, enum: [0, 1], description: "The predictor covers the antibiotic"}
       - {name: n, type: integer, description: "Isolates"}
       - {name: n_resistant, type: integer, description: "Resistant isolates"}

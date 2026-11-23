@@ -186,10 +186,10 @@ def test_cabbage_entry(tmp_path):
     assert {k: n.get(k) for k in ("CABBAGE_DOWNLOAD", "CABBAGE_SELECT", "CABBAGE_FETCH")} == \
         {"CABBAGE_DOWNLOAD": 1, "CABBAGE_SELECT": 1, "CABBAGE_FETCH": 1}
     for p in ("QC_PATHS", "CHECKM2", "PREPARE", "ASSIGN", "CALL", "PREDICT", "EXTERNAL_PREP",
-              "EXTERNAL_COLLECT", "RGI_COLLECT", "COMPARE", "LOOKUP_PREPARE", "LOOKUP_CALL",
+              "EXTERNAL_COLLECT", "COMPARE", "LOOKUP_PREPARE", "LOOKUP_CALL",
               "LOOKUP"):
         assert n.get(f"CABBAGE_{p}") == 2, p
-    assert n["CABBAGE_EXTERNAL_RUN"] == 6 and n["CABBAGE_RGI"] == 4
+    assert n["CABBAGE_EXTERNAL_RUN"] == 6 and "CABBAGE_RGI" not in n
     assert n["CABBAGE_LOOKUP_SELECT"] == 1
     assert n["COMPLETENESS_GATE"] == 1
 

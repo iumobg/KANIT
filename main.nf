@@ -31,10 +31,10 @@ include { EVIDENCE } from './subworkflows/local/evidence'
 include { COMPARISON } from './subworkflows/local/comparison'
 include { DOWNLOAD_BVBRC } from './modules/local/download'
 include { CABBAGE_DOWNLOAD; CABBAGE_SELECT; CABBAGE_FETCH; CABBAGE_QC_PATHS; CABBAGE_CHECKM2;
-          CABBAGE_EXTERNAL_PREP; CABBAGE_EXTERNAL_RUN; CABBAGE_RGI;
+          CABBAGE_EXTERNAL_PREP; CABBAGE_EXTERNAL_RUN;
           CABBAGE_LOOKUP_SELECT } from './modules/local/cabbage'
 include { CABBAGE_LIGHT as CABBAGE_PREPARE; CABBAGE_LIGHT as CABBAGE_EXTERNAL_COLLECT;
-          CABBAGE_LIGHT as CABBAGE_RGI_COLLECT; CABBAGE_LIGHT as CABBAGE_COMPARE;
+          CABBAGE_LIGHT as CABBAGE_COMPARE;
           CABBAGE_HEAVY as CABBAGE_ASSIGN; CABBAGE_HEAVY as CABBAGE_CALL;
           CABBAGE_HEAVY as CABBAGE_PREDICT; CABBAGE_LIGHT as CABBAGE_LOOKUP_PREPARE;
           CABBAGE_HEAVY as CABBAGE_LOOKUP_CALL; CABBAGE_HEAVY as CABBAGE_LOOKUP } from './modules/local/cabbage'
@@ -112,7 +112,7 @@ workflow {
     MODELS(GENOMES.out.pairs, GENOMES.out.stores)
     EVIDENCE(GENOMES.out.stores.join(modelled.map { [it] }), MODELS.out.folds, MODELS.out.units,
              MODELS.out.finals, MODELS.out.packing)
-    COMPARISON(GENOMES.out.prepared, EVIDENCE.out.rgi, MODELS.out.metrics)
+    COMPARISON(GENOMES.out.prepared, MODELS.out.metrics)
     FINISH(EVIDENCE.out.grading.map { m, r -> r }
                .mix(EVIDENCE.out.association.map { m, r -> r }, EVIDENCE.out.lp,
                     COMPARISON.out.compare.map { o, r -> r })
@@ -152,13 +152,8 @@ workflow CABBAGE {
                          .flatMap { org, s -> (0..<n).collect { k -> [org, s, k, n] } })
     CABBAGE_EXTERNAL_COLLECT(CABBAGE_EXTERNAL_RUN.out.done.groupTuple(size: n)
                              .map { org, rs -> [org, 'external-collect', rs] })
-    def m = params.rgi_shards as int
-    CABBAGE_RGI(prepared.flatMap { org, r -> (0..<m).collect { k -> [org, r, k, m] } })
-    CABBAGE_RGI_COLLECT(CABBAGE_RGI.out.done.groupTuple(size: m)
-                        .map { org, rs -> [org, 'rgi-collect', rs] })
     CABBAGE_COMPARE(CABBAGE_PREDICT.out.done.join(CABBAGE_EXTERNAL_COLLECT.out.done)
-                    .join(CABBAGE_RGI_COLLECT.out.done)
-                    .map { org, a, b, c -> [org, 'compare', [a, b, c]] })
+                    .map { org, a, b -> [org, 'compare', [a, b]] })
     // KANIT lookup (added 2026-11-13): the knowledge base as a catalogue on the same isolates
     CABBAGE_LOOKUP_PREPARE(prepared.map { org, r -> [org, 'lookup-prepare', r] })
     CABBAGE_LOOKUP_CALL(CABBAGE_LOOKUP_PREPARE.out.done.map { org, r -> [org, 'lookup-call', r] })

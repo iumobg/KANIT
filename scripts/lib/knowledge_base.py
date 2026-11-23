@@ -20,6 +20,7 @@ import pandas as pd
 
 from lib import card_layer, grading
 from lib.card_layer import revcomp
+from lib.external import TOOLS
 
 SCHEMA_VERSION = "1.0"
 
@@ -333,8 +334,7 @@ CREATE TABLE external_call (            -- AMRFinderPlus calls of every genome
 );
 CREATE TABLE external_comparison (
     model_id               TEXT NOT NULL REFERENCES model,
-    tool                   TEXT NOT NULL CHECK (tool IN ('amrfinderplus', 'resfinder', 'rgi_all',
-                                                         'rgi_without_near_universal', 'model')),
+    tool                   TEXT NOT NULL CHECK (tool IN ('amrfinderplus', 'resfinder', 'model')),
     assessable             INTEGER NOT NULL CHECK (assessable IN (0, 1)),
     n                      INTEGER,
     n_resistant            INTEGER,
@@ -548,9 +548,10 @@ def validate(conn: sqlite3.Connection) -> dict:
     if bad:
         problems.append(f"{bad} organism(s) without a data snapshot")
     bad = conn.execute("SELECT count(*) FROM model m WHERE (SELECT count(*) FROM "
-                       "external_comparison e WHERE e.model_id = m.model_id) != 5").fetchone()[0]
+                       "external_comparison e WHERE e.model_id = m.model_id) != ?",
+                       (len(TOOLS),)).fetchone()[0]
     if bad:
-        problems.append(f"{bad} model(s) without the five rows of the external comparison")
+        problems.append(f"{bad} model(s) without one row per predictor in the external comparison")
     bad = conn.execute(
         "SELECT count(*) FROM (SELECT DISTINCT model_id, unitig_id FROM pattern_member) pm "
         "WHERE (SELECT count(*) FROM card_annotation ca WHERE ca.model_id = pm.model_id "

@@ -7,7 +7,6 @@ workflow COMPARISON {
     take:
     prepared                        // organism with panel pairs, their antibiotics, QC and
                                     // lineage receipts
-    rgi                             // organism, RGI receipt
     metrics                         // meta, metrics receipt
 
     main:
@@ -16,8 +15,8 @@ workflow COMPARISON {
     EXTERNAL_RUN(EXTERNAL_PREP.out.script.flatMap { org, s -> (0..<n).collect { k -> [org, s, k, n] } })
     EXTERNAL_COLLECT(EXTERNAL_RUN.out.done.groupTuple(size: n))
     perOrganism = metrics.map { m, r -> [m.organism, r] }.groupTuple()
-    EXTERNAL_COMPARE(EXTERNAL_COLLECT.out.done.join(rgi).join(perOrganism, remainder: true)
-                           .map { org, a, b, cs -> [org, [a, b] + (cs ?: [])] })
+    EXTERNAL_COMPARE(EXTERNAL_COLLECT.out.done.join(perOrganism, remainder: true)
+                           .map { org, a, cs -> [org, [a] + (cs ?: [])] })
 
     emit:
     compare = EXTERNAL_COMPARE.out.done

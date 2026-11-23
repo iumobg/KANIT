@@ -1,7 +1,7 @@
 """Comparison with genotype-based prediction.
 
-AMRFinderPlus, ResFinder (with PointFinder) and RGI predict a genome resistant to
-an antibiotic when they report at least one qualifying determinant:
+AMRFinderPlus and ResFinder (with PointFinder) predict a genome resistant to an
+antibiotic when they report at least one qualifying determinant:
 
 * AMRFinderPlus: Type AMR, Scope core, class or subclass among the antibiotic's
   registry keywords (lib.hypotheses.reference_calls). An antibiotic is not
@@ -9,11 +9,14 @@ an antibiotic when they report at least one qualifying determinant:
   reference catalogue.
 * ResFinder: its predicted phenotype for the antibiotic; not assessable when the
   phenotype table does not report the antibiotic.
-* RGI: Perfect or Strict hits of the antibiotic's CARD drug classes,
-  either all of them or without homolog hits to near-universal genes (≥ 95% of
-  the organism's genomes); variant and overexpression calls always count.
 * The model: the mean of the lineage-aware out-of-fold probabilities of a genome
   over the repeats, resistant at ≥ the threshold.
+
+RGI is not among them. It reports CARD models at the level of drug class, without a
+drug-level phenotype rule, and counts intrinsic multidrug efflux genes and their
+regulators: read as a predictor it calls almost every genome resistant. CARD,
+through RGI, is the reference of the concordance criterion (lib.card_layer), so
+comparing the knowledge base with RGI would also compare CARD with itself.
 
 Metrics against the laboratory phenotype: sensitivity, specificity, balanced
 accuracy, very major error rate (resistant predicted susceptible, over the
@@ -28,10 +31,9 @@ from pathlib import Path
 import pandas as pd
 
 from lib import concordance
-from lib.card_layer import drug_classes
 from lib.hypotheses import class_tokens, reference_calls
 
-TOOLS = ("amrfinderplus", "resfinder", "rgi_all", "rgi_without_near_universal", "model")
+TOOLS = ("amrfinderplus", "resfinder", "model")
 CALL_COLUMNS = ["genome_id", "element_symbol", "type", "subtype", "scope", "class", "subclass"]
 _AFP_NAMES = {"element_symbol": ("Element symbol", "Gene symbol"),
               "type": ("Type", "Element type"), "subtype": ("Subtype", "Element subtype"),
@@ -113,19 +115,6 @@ def predict_resfinder(calls: pd.DataFrame, genomes, antibiotic: str) -> pd.Serie
         raise ValueError(f"ResFinder reports {antibiotic} for some genomes but not "
                          f"{len(missing)}, e.g. {missing[:3]}")
     return pd.Series([by[g] for g in genomes], index=list(genomes))
-
-
-def predict_rgi(hits: pd.DataFrame, genomes, targets: set[str], near_universal: set[str],
-                *, drop_near_universal: bool) -> pd.Series | None:
-    if not targets:
-        return None
-    match = hits["drug_class"].map(lambda v: bool(drug_classes(v) & targets))
-    keep = hits[match]
-    if drop_near_universal:
-        keep = keep[~((keep["model_type"] == "homolog")
-                      & keep["aro"].astype(str).isin(near_universal))]
-    hit = set(keep["genome_id"].astype(str))
-    return pd.Series([int(g in hit) for g in genomes], index=list(genomes))
 
 
 def predict_model(oof: pd.DataFrame, genomes, threshold: float) -> pd.Series:

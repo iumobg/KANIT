@@ -1019,7 +1019,7 @@ def _kb_case_numbers(con: sqlite3.Connection, ctx: pd.DataFrame, put) -> None:
 # ROC-AUC only (cabbage.lookup_score.*): it ranks isolates, and its cut at > 0 is not a rule.
 CABBAGE_LOOKUP_RULES = ("upto_confirmed", "upto_strong_novel", "upto_candidate", "upto_weak",
                         "b1")
-CABBAGE_TOOLS = ("amrfinderplus", "resfinder", "rgi_all", "rgi_without_near_universal")
+CABBAGE_TOOLS = ("amrfinderplus", "resfinder")
 _CABBAGE_STATS = {"balanced_accuracy": "ba", "sensitivity": "sensitivity",
                   "specificity": "specificity", "very_major_error_rate": "vme",
                   "major_error_rate": "me"}
@@ -1183,9 +1183,6 @@ def _cabbage_numbers(t: Tables, organisms: list[str], put) -> None:
         if len(v):
             put(f"{pre}.min_ba", float(v.min()), src, "balanced_accuracy", f"Lowest, {p}")
             put(f"{pre}.max_ba", float(v.max()), src, "balanced_accuracy", f"Highest, {p}")
-            if p.startswith("rgi"):
-                put(f"{pre}.n_ba_half", int((v == 0.5).sum()), src, "balanced_accuracy",
-                    f"Pairs where {p} scores 0.5 (one class called for every isolate)")
     for tool in CABBAGE_TOOLS:
         _cabbage_compare(scores, "lookup", tool, put, n_boot)
         _cabbage_compare(scores, "model", tool, put, n_boot)
@@ -1196,7 +1193,7 @@ def _cabbage_numbers(t: Tables, organisms: list[str], put) -> None:
     cols = [c for c in ("model", "lookup", "lookup_b1", *CABBAGE_TOOLS) if c in wide]
     common = wide[cols].dropna()
     put("cabbage.common.n_pairs", len(common), src, "model_id",
-        "Pairs every predictor (model, lookup, lookup b1, four tools) scores")
+        "Pairs every predictor (model, lookup, lookup b1, two tools) scores")
     for c in cols:
         if len(common):
             put(f"cabbage.common.{c}.median_ba", float(common[c].median()), src,

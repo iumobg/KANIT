@@ -58,14 +58,6 @@ def test_predictions_and_metrics():
     p = ex.predict_amrfinder(calls, g, {"QUINOLONE"}, {"QUINOLONE"})
     assert p.tolist() == [1, 0, 0, 0]                    # plus scope does not count
     assert ex.predict_amrfinder(calls, g, {"MONOBACTAM"}, {"QUINOLONE"}) is None
-    hits = pd.DataFrame({"genome_id": ["g1", "g2", "g3", "g4", "g3"],
-                         "aro": ["10", "10", "10", "10", "20"],
-                         "model_type": ["homolog"] * 4 + ["variant"],
-                         "drug_class": ["fluoroquinolone antibiotic; tetracycline antibiotic"] * 4
-                         + ["fluoroquinolone antibiotic"]})
-    t = {"fluoroquinolone antibiotic"}
-    assert ex.predict_rgi(hits, g, t, {"10"}, drop_near_universal=False).tolist() == [1, 1, 1, 1]
-    assert ex.predict_rgi(hits, g, t, {"10"}, drop_near_universal=True).tolist() == [0, 0, 1, 0]
     oof = pd.DataFrame({"arm": ["lineage_aware"] * 8 + ["lineage_blind"] * 4,
                         "repeat": [1] * 4 + [2] * 4 + [1] * 4, "genome_id": g * 3,
                         "p": [0.9, 0.4, 0.6, 0.1, 0.8, 0.7, 0.3, 0.2, 0, 0, 0, 0]})
@@ -90,14 +82,14 @@ def test_step_end_to_end(tmp_path):
     config = {"paths_organism": {k: str(root / v) for k, v in {
         "panel_dir": "panel", "genome_qc_dir": "{organism}/qc", "lineage_dir": "{organism}/lin",
         "metadata_file": "{organism}/pheno.csv", "raw_genomes_dir": "{organism}/genomes",
-        "external_dir": "{organism}/external", "rgi_dir": "{organism}/rgi",
+        "external_dir": "{organism}/external",
         "unitig_store_dir": "{organism}/store", "matrix_dir": "{organism}/{antibiotic}/mm",
         "cv_dir": "{organism}/{antibiotic}/cv"}.items()},
         "card": {"near_universal": 0.95}, "cv": {"threshold": 0.5}}
     ids = [f"g{i}" for i in range(12)]
     y = np.array([1] * 6 + [0] * 6)
     org = root / "ecoli"
-    for d in ("qc", "lin", "rgi"):
+    for d in ("qc", "lin"):
         (org / d).mkdir(parents=True)
     (root / "panel").mkdir()
     pd.DataFrame({"organism": ["ecoli"], "antibiotic": ["ciprofloxacin"],
@@ -170,13 +162,10 @@ printf 'ciprofloxacin\\tquinolone\\t%s\\t1\\tx\\n' "$r" > "$o/pheno_table_escher
     pd.DataFrame({"arm": "lineage_aware", "repeat": 1, "fold": 0, "genome_id": ids, "y": y,
                   "p": np.where(y == 1, 0.9, 0.1)}).to_csv(
         org / "ciprofloxacin" / "cv" / "oof_predictions.csv", index=False)
-    pd.DataFrame({"genome_id": ids[:6], "aro": "3003294", "model_type": "variant",
-                  "drug_class": "fluoroquinolone antibiotic"}).to_csv(org / "rgi" / "rgi_hits.csv",
-                                                                       index=False)
     t = m.compare("ecoli", config, ext).set_index("tool")
     assert t.loc["amrfinderplus", "sensitivity"] == pytest.approx(5 / 6)
     assert t.loc["resfinder", "very_major_error_rate"] == pytest.approx(2 / 6)
-    assert t.loc["rgi_all", "balanced_accuracy"] == 1.0
+    assert set(t.index) == {"amrfinderplus", "resfinder", "model"}          # RGI is no predictor
     assert t.loc["model", "balanced_accuracy"] == 1.0
     assert json.loads((ext / "versions.json").read_text())["resfinder"] == "4.5.0"
     summary = json.loads((ext / "external_summary.json").read_text())

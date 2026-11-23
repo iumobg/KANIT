@@ -195,26 +195,6 @@ process CABBAGE_EXTERNAL_RUN {
     stubReceipt(task, 'cabbage_external_tools', "${org} ${shard}/${n}")
 }
 
-process CABBAGE_RGI {
-    tag "${org} ${shard}/${n}"
-    label 'rgi'
-
-    input:
-    tuple val(org), path(deps, stageAs: 'dep*.json'), val(shard), val(n)
-
-    output:
-    tuple val(org), path('receipt.json'), emit: done
-
-    script:
-    """
-    ${py('19_cabbage.py')} rgi --organism ${org} --shard ${shard} --shards ${n} --threads ${task.cpus}
-    ${receipt(task, 'cabbage_rgi', "${org} ${shard}/${n}")}
-    """
-
-    stub:
-    stubReceipt(task, 'cabbage_rgi', "${org} ${shard}/${n}")
-}
-
 // KANIT lookup (added 2026-11-13): the primary rule from the training counts of every
 // organism (19_cabbage.py lookup-select, lib/cabbage_lookup.py)
 process CABBAGE_LOOKUP_SELECT {

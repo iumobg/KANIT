@@ -22,6 +22,7 @@ pytest.importorskip("optuna")
 from lib import folds, matrix_store  # noqa: E402
 from lib import knowledge_base as kb  # noqa: E402
 from lib.card_layer import revcomp  # noqa: E402
+from lib.external import TOOLS  # noqa: E402
 from lib.matrix_store import sha256_file  # noqa: E402
 
 pytestmark = pytest.mark.unit
@@ -327,7 +328,7 @@ def test_build_loads_every_layer_and_rechecks_the_grades(built):
                           "WHERE tool = 'model'").fetchone()
         assert ba[0] == 1 and ba[1] > 0.7
         assert conn.execute("SELECT count(*) FROM external_comparison WHERE assessable = 0"
-                            ).fetchone()[0] == 4
+                            ).fetchone()[0] == len(TOOLS) - 1        # only the model is given
         assert json.loads(rel[2])["resfinder"] == "4.5.0"
         assert conn.execute("SELECT gene FROM unitig_context").fetchone()[0] == "gyrA"
         tools = json.loads(rel[2])

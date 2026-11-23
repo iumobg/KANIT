@@ -357,7 +357,7 @@ tables:
     description: "Agreement of AMRFinderPlus, ResFinder, RGI and the model with the phenotypes of each model's genomes."
     columns:
       model_id: "Model"
-      tool: "Predictor: amrfinderplus, resfinder, rgi_all, rgi_without_near_universal, or model (the model's out-of-fold predictions)"
+      tool: "Predictor: amrfinderplus, resfinder, or model (the model's out-of-fold predictions)"
       assessable: "1 when the predictor covers the antibiotic"
       n: "Genomes compared"
       n_resistant: "Resistant genomes among them"

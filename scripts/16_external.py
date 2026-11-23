@@ -11,12 +11,12 @@ Subcommands, so that the tools can run in their own container:
   collect  every genome's reports into amrfinder_calls.csv, amrfinder_genomes.csv
            and resfinder_calls.csv; a missing report stops it
   compare  sensitivity, specificity, balanced accuracy and error rates of
-           AMRFinderPlus, ResFinder, RGI (two variants) and the model for every
+           AMRFinderPlus, ResFinder and the model for every
            panel model of the organism (comparison.csv)
   all      prep, run, collect and compare
 
-Inputs: the panel decisions, the panel inputs (00, 02c, 02d), 08's rgi_hits.csv,
-the unitig store, the model matrices and 04's out-of-fold predictions. The rules
+Inputs: the panel decisions, the panel inputs (00, 02c, 02d), the model matrices
+and 04's out-of-fold predictions. The rules
 are in lib/external.py. Outputs: paths_organism.external_dir.
 """
 import argparse
@@ -32,10 +32,8 @@ sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
 
 from lib import external as ex  # noqa: E402
 from lib import panel, registry  # noqa: E402
-from lib.card_layer import near_universal_aros  # noqa: E402
 from lib.config import load_config, resolve_path, resolve_tool  # noqa: E402
 from lib.io_utils import run_logged  # noqa: E402
-from lib.matrix_store import Store  # noqa: E402
 
 
 def _included(organism, config) -> list[str]:
@@ -164,12 +162,6 @@ def compare(organism, config, out_dir: Path) -> pd.DataFrame:
                         keep_default_na=False)
     rf = pd.read_csv(out_dir / "resfinder_calls.csv", dtype={"genome_id": str})
     catalog = ex.catalog_tokens(out_dir / "amrfinder_catalog.tsv")
-    rgi = pd.read_csv(resolve_path("rgi_dir", organism=organism, config=config) / "rgi_hits.csv",
-                      dtype={"genome_id": str, "aro": str}, keep_default_na=False,
-                      usecols=["genome_id", "aro", "model_type", "drug_class"])
-    store_genomes = Store(resolve_path("unitig_store_dir", organism=organism,
-                                       config=config)).genomes
-    near = near_universal_aros(rgi, store_genomes, config["card"]["near_universal"])
     keywords = registry.load_amrfinder_keywords()
     parts = []
     for ab in _included(organism, config):
@@ -179,14 +171,10 @@ def compare(organism, config, out_dir: Path) -> pd.DataFrame:
         mg = pd.read_csv(path("matrix_dir") / "genomes.csv", dtype={"Genome ID": str})
         truth = pd.Series(mg["label"].astype(int).to_numpy(), index=mg["Genome ID"])
         g = truth.index.tolist()
-        targets = registry.card_drug_classes(ab)
         oof = path("cv_dir") / "oof_predictions.csv"
         preds = {
             "amrfinderplus": ex.predict_amrfinder(calls, g, keywords.get(ab, set()), catalog),
             "resfinder": ex.predict_resfinder(rf, g, ab),
-            "rgi_all": ex.predict_rgi(rgi, g, targets, near, drop_near_universal=False),
-            "rgi_without_near_universal": ex.predict_rgi(rgi, g, targets, near,
-                                                         drop_near_universal=True),
             "model": (ex.predict_model(pd.read_csv(oof, dtype={"genome_id": str}), g,
                                        config["cv"]["threshold"]) if oof.exists() else None)}
         parts.append(ex.compare_model(f"{organism}__{ab}", truth, preds))

@@ -362,7 +362,6 @@ def test_prepare_and_predict(trained, tmp_path, monkeypatch):
     assert len(pred) == 22 and set(pred["lineage_seen"]) == {True, False}
     # the genotype-based predictors on the same isolates (compare)
     (out / "external").mkdir()
-    (out / "rgi").mkdir()
     res = [f"E{i}" for i in range(12)]
     pd.DataFrame({"genome_id": res[:9], "element_symbol": "qnrS1", "type": "AMR", "subtype": "AMR",
                   "scope": "core", "class": "QUINOLONE", "subclass": "QUINOLONE"}).to_csv(
@@ -371,16 +370,10 @@ def test_prepare_and_predict(trained, tmp_path, monkeypatch):
     pd.DataFrame({"genome_id": ext[:22], "antibiotic": "ciprofloxacin",
                   "resistant": [1] * 12 + [1] + [0] * 9}).to_csv(
         out / "external" / "resfinder_calls.csv", index=False)
-    hits = pd.DataFrame({"genome_id": res[:6], "aro": "3003926", "model_type": "homolog",
-                         "drug_class": "fluoroquinolone antibiotic"})
-    hits.to_csv(out / "rgi" / "rgi_hits.csv", index=False)
-    (tmp_path / "mainrgi").mkdir()
-    hits.iloc[0:0].to_csv(tmp_path / "mainrgi" / "rgi_hits.csv", index=False)
-    config["paths_organism"]["rgi_dir"] = str(tmp_path / "mainrgi")
     t = m.compare("ecoli", config).set_index("tool")
     assert t.loc["amrfinderplus", "sensitivity"] == pytest.approx(9 / 12)
     assert t.loc["resfinder", "specificity"] == pytest.approx(9 / 10)
-    assert t.loc["rgi_all", "sensitivity"] == pytest.approx(6 / 12)
+    assert "rgi" not in t.index
     assert t.loc["model", "balanced_accuracy"] == 1.0
     assert t.loc["amrfinderplus", "sensitivity_low"] <= 9 / 12 <= t.loc["amrfinderplus", "sensitivity_high"]
     # the outputs follow the output contract
