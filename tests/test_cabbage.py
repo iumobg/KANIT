@@ -335,18 +335,23 @@ def test_prepare_and_predict(trained, tmp_path, monkeypatch):
     k = m.prepare("kpneumoniae", no_store)
     assert k["models"] == [] and k["n_unitigs"] == 0
     assert json.loads((tmp_path / "cab" / "kpneumoniae" / "cabbage_prepare.json").read_text())["models"] == []
-    # unitig-caller --simple as it really behaves: it ignores --rtab, writes <out>.pyseer and
-    # leaves out a unitig found in no genome (E12–E23 carry neither signal unitig)
+    # unitig-caller --simple as it really behaves (1.3.2): it skips the first line of --unitigs
+    # as a header, ignores --rtab, writes <out>.pyseer and leaves out a unitig found in no
+    # genome (E12–E23 carry neither signal unitig); it also records what it searched
     fake = tmp_path / "unitig-caller"
     fake.write_text(f"#!{sys.executable}\nimport sys\na = sys.argv\n"
+                    "q = open(a[a.index('--unitigs') + 1]).read().split('\\n')[1:]\n"
+                    "open(a[a.index('--out') + 1] + '.searched', 'w').write('\\n'.join(u for u in q if u))\n"
                     "open(a[a.index('--out') + 1] + '.pyseer', 'w').write(''.join(\n"
                     "    u + ' | ' + ' '.join(f'E{i}:1' for i in range(12)) + '\\n'\n"
-                    "    for u in ('ACGTSIGA', 'ACGTSIGB')))\n")
+                    "    for u in ('ACGTSIGA', 'ACGTSIGB') if u in q))\n")
     fake.chmod(0o755)
     monkeypatch.setenv("AMR_UNITIG_CALLER_BIN", str(fake))
     rtab = cp.read_rtab(m.call("ecoli", config, threads=1))
     assert sorted(rtab.columns) == sorted(ext[:23])
     assert len(rtab) == len((out / "unitigs.txt").read_text().split())
+    # every unitig is searched, the first one too
+    assert (out / "calls.searched").read_text().split() == (out / "unitigs.txt").read_text().split()
     assert rtab.loc["ACGTSIGA"].sum() == 12 and rtab.drop(["ACGTSIGA", "ACGTSIGB"]).sum().sum() == 0
     (out / "poppunk").mkdir()
     pd.DataFrame({"Taxon": ext[:22], "Cluster": [str(i % 4) if i % 2 else "999" for i in range(22)]}

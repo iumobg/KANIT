@@ -290,6 +290,15 @@ def assign(organism: str, config: dict, *, threads: int) -> Path:
     return clusters
 
 
+def simple_mode_query(unitigs_file: Path) -> Path:
+    """The query file of unitig-caller's simple mode: the unitigs under a header line. Simple
+    mode (unitig-caller 1.3.2) reads the first line of a text --unitigs file as a header and
+    skips it; without one, the first unitig was never searched (found 24.11.2026)."""
+    query = unitigs_file.with_name(unitigs_file.stem + "_query.txt")
+    query.write_text("unitig\n" + unitigs_file.read_text())
+    return query
+
+
 def call(organism: str, config: dict, *, threads: int) -> Path:
     from lib.config import resolve_tool
     from lib.io_utils import run_logged
@@ -298,8 +307,9 @@ def call(organism: str, config: dict, *, threads: int) -> Path:
     if not tool:
         sys.exit("ERROR: unitig-caller not found on PATH (or set AMR_UNITIG_CALLER_BIN).")
     # simple mode ignores --rtab and writes calls.pyseer, so the Rtab is built from it
-    run_logged([tool, "--simple", "--refs", out / "refs.txt", "--unitigs", out / "unitigs.txt",
-                "--out", out / "calls", "--threads", threads], out / "unitig_caller.log")
+    run_logged([tool, "--simple", "--refs", out / "refs.txt", "--unitigs",
+                simple_mode_query(out / "unitigs.txt"), "--out", out / "calls", "--threads", threads],
+               out / "unitig_caller.log")
     pyseer, rtab = out / "calls.pyseer", out / "calls.rtab"
     if not pyseer.exists():
         sys.exit(f"ERROR: unitig-caller wrote no {pyseer}")
@@ -512,8 +522,8 @@ def lookup_call(organism: str, config: dict, *, threads: int) -> Path:
         if not tool:
             sys.exit("ERROR: unitig-caller not found on PATH (or set AMR_UNITIG_CALLER_BIN).")
         run_logged([tool, "--simple", "--refs", out / "refs.txt", "--unitigs",
-                    out / "lookup_unitigs.txt", "--out", out / "calls_lookup", "--threads", threads],
-                   out / "unitig_caller_lookup.log")
+                    simple_mode_query(out / "lookup_unitigs.txt"), "--out", out / "calls_lookup",
+                    "--threads", threads], out / "unitig_caller_lookup.log")
         if not pyseer.exists():
             sys.exit(f"ERROR: unitig-caller wrote no {pyseer}")
     else:
