@@ -143,6 +143,32 @@ def test_symbol_mapping():
     assert hy.map_symbol("blaOXA-48", idx) == set()
 
 
+def _aro_index(families: dict[str, str] | None = None) -> pd.DataFrame:
+    """CARD's ARO index of the fixture's terms; ``families`` refiles some of them."""
+    fam = {a: f for a, _, _, f in AROS} | (families or {})
+    return pd.DataFrame({"ARO Accession": [a for a, *_ in AROS],
+                         "ARO Name": [n for _, n, *_ in AROS],
+                         "CARD Short Name": [n for _, n, *_ in AROS],
+                         "AMR Gene Family": [fam[a] for a, *_ in AROS]})
+
+
+def test_index_must_match_the_knowledge_base(conn):
+    """An index of another CARD release renames families the knowledge base holds
+    ("Erm 23S ribosomal RNA methyltransferase", "Erm-like 23S rRNA methyltransferase"),
+    which changed H7 without an error."""
+    assert hy.index_mismatches(conn, _aro_index()) == []
+    assert hy.index_mismatches(conn, _aro_index({"ARO:3": "TEM-like beta-lactamase"})) == [
+        "ARO:3"]
+    assert hy.index_mismatches(conn, _aro_index().iloc[1:]) == ["ARO:1"]     # not in the index
+    # a family more or less counts; their order and spacing do not
+    assert hy.index_mismatches(conn, _aro_index(
+        {"ARO:2": "quinolone resistance protein (qnr);antibiotic efflux"})) == ["ARO:2"]
+    conn.execute("UPDATE aro SET gene_family = 'antibiotic efflux; quinolone resistance "
+                 "protein (qnr)' WHERE aro_accession = 'ARO:2'")
+    assert hy.index_mismatches(conn, _aro_index(
+        {"ARO:2": "quinolone resistance protein (qnr);antibiotic efflux"})) == []
+
+
 def _reference():
     rows = []
     for g in ("g0", "g1", "g2", "g3"):                    # resistant genomes, point mutation
@@ -240,19 +266,16 @@ def test_the_numbers_file_reads_fields_the_summaries_have(conn):
     assert len(s["H7"]["0.1"]["secondary_table"]) == 2
 
 
-def test_script_end_to_end(tmp_path, monkeypatch):
+def _script(tmp_path, monkeypatch):
+    """hypotheses.py on the fixture knowledge base (CARD 4.0.2), its index in card/."""
     import importlib.util
-    import json
     _kb(tmp_path / "kanit.sqlite").close()
     with sqlite3.connect(tmp_path / "kanit.sqlite") as c:
         kb.insert(c, "release", pd.DataFrame([{
             "kb_version": "t", "schema_version": kb.SCHEMA_VERSION, "created_at": "now",
-            "config_sha256": "y",
-            "tools": "{}"}]))
+            "config_sha256": "y", "card_version": "4.0.2", "tools": "{}"}]))
     (tmp_path / "card").mkdir()
-    pd.DataFrame({"ARO Name": ["QnrS1", "TEM-1"], "CARD Short Name": ["QnrS1", "TEM-1"],
-                  "AMR Gene Family": ["quinolone resistance protein (qnr)", "TEM beta-lactamase"]}
-                 ).to_csv(tmp_path / "card" / "aro_index.tsv", sep="\t", index=False)
+    _aro_index().to_csv(tmp_path / "card" / "aro_index.tsv", sep="\t", index=False)
     ext = tmp_path / "ecoli" / "external"
     ext.mkdir(parents=True)
     _reference()["ecoli"].to_csv(ext / "amrfinder_calls.csv", index=False)
@@ -266,6 +289,12 @@ def test_script_end_to_end(tmp_path, monkeypatch):
     m = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(m)
     monkeypatch.setattr(m, "load_config", lambda: config)
+    return m, config, ext
+
+
+def test_script_end_to_end(tmp_path, monkeypatch):
+    import json
+    m, config, ext = _script(tmp_path, monkeypatch)
     monkeypatch.setattr(sys, "argv", ["x", "--n-mc", "200"])
     m.main()
     s = json.loads((tmp_path / "x" / "hypotheses" / "hypotheses.json").read_text())
@@ -280,3 +309,30 @@ def test_script_end_to_end(tmp_path, monkeypatch):
     pd.DataFrame({"genome_id": ["g0"]}).to_csv(ext / "amrfinder_genomes.csv", index=False)
     with pytest.raises(SystemExit, match="did not analyse"):
         m.main()
+
+
+def test_script_stops_on_another_card_release(tmp_path, monkeypatch):
+    """An overlay's paths_prefix leaves CARD in place, so a knowledge base built elsewhere
+    meets the local CARD release: H7 stops instead of mapping with another release's
+    families, and --aro-index names the knowledge base's own index."""
+    import json
+    m, _, _ = _script(tmp_path, monkeypatch)
+    card = tmp_path / "card"
+    monkeypatch.setattr(sys, "argv", ["x", "--n-mc", "200"])
+    (card / "card.json").write_text(json.dumps({"_version": "4.0.1"}))
+    with pytest.raises(SystemExit, match="holds CARD 4.0.1, the knowledge base was built "
+                                         "with CARD 4.0.2"):
+        m.main()
+    (card / "card.json").unlink()                         # no card.json: the families decide
+    _aro_index({"ARO:3": "TEM-like beta-lactamase"}).to_csv(card / "aro_index.tsv", sep="\t",
+                                                            index=False)
+    with pytest.raises(SystemExit, match=r"1 CARD term\(s\) of the knowledge base.*ARO:3"):
+        m.main()
+    assert not (tmp_path / "x").exists()                  # stopped before writing anything
+    own = tmp_path / "kb_card" / "aro_index.tsv"
+    own.parent.mkdir()
+    _aro_index().to_csv(own, sep="\t", index=False)
+    monkeypatch.setattr(sys, "argv", ["x", "--n-mc", "200", "--aro-index", str(own)])
+    m.main()
+    s = json.loads((tmp_path / "x" / "hypotheses" / "hypotheses.json").read_text())
+    assert s["aro_index"] == str(own) and s["H6"]["n_mutational"] == 2

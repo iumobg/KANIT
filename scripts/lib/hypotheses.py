@@ -13,7 +13,8 @@ index: the normalised symbol (lower case, without "bla" and punctuation) equal t
 an ARO name or CARD short name; otherwise the symbol without its allele number;
 otherwise the one family shared by every ARO that extends the allele-less symbol
 with an allele number; van cluster genes (vanH-A) through CARD's cluster terms.
-Unmapped symbols are reported with their counts.
+Unmapped symbols are reported with their counts. The index must come from the CARD
+release the knowledge base was built with (index_mismatches()).
 
 The sensitivity analysis runs every test again without the
 models the label permutation flags (sensitivity()).
@@ -163,16 +164,37 @@ def _norm(x: str) -> str:
     return re.sub(r"[^a-z0-9]", "", x[3:] if x.startswith("bla") else x)
 
 
+def _family_set(field) -> set[str]:
+    """The AMR gene families of a semicolon-separated cell (none for an empty one)."""
+    return set() if pd.isna(field) else {f.strip() for f in str(field).split(";") if f.strip()}
+
+
 def card_family_index(aro_index: pd.DataFrame) -> dict[str, set[str]]:
     """{normalised ARO name or CARD short name: CARD AMR gene families}."""
     idx: dict[str, set[str]] = defaultdict(set)
     for name, short, fams in aro_index[["ARO Name", "CARD Short Name", "AMR Gene Family"]].itertuples(
             index=False):
-        fs = {f.strip() for f in str(fams or "").split(";") if f.strip() and str(fams) != "nan"}
+        fs = _family_set(fams)
         for key in (name, short):
             if isinstance(key, str) and key:
                 idx[_norm(key)] |= fs
     return idx
+
+
+def index_mismatches(conn, aro_index: pd.DataFrame) -> list[str]:
+    """CARD terms of the knowledge base that the ARO index lacks or files under other
+    AMR gene families.
+
+    H7 compares the families the index gives AMRFinderPlus symbols with the families
+    the knowledge base records for its CARD hits. An index from another CARD release
+    names some families differently ("Erm 23S ribosomal RNA methyltransferase" and
+    "Erm-like 23S rRNA methyltransferase"), which changes H7 without an error, so the
+    two must agree on every term the knowledge base holds."""
+    index: dict[str, set[str]] = defaultdict(set)
+    for acc, fams in aro_index[["ARO Accession", "AMR Gene Family"]].itertuples(index=False):
+        index[str(acc).strip()] |= _family_set(fams)
+    return sorted(acc for acc, fams in conn.execute("SELECT aro_accession, gene_family FROM aro")
+                  if acc not in index or index[acc] != _family_set(fams))
 
 
 def map_symbol(symbol: str, idx: dict[str, set[str]]) -> set[str]:

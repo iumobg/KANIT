@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
 """Hypothesis tests on the knowledge base.
 
-Reads kb_dir/kanit.sqlite, CARD's ARO index (next to card.card_json) and, for H7
-and H6, every organism's AMRFinderPlus calls (external_dir/amrfinder_calls.csv
-and amrfinder_genomes.csv, written by step 16). An organism without them is left
-out of H7 and H6 and listed in the summary; one whose reference misses a model
-genome stops the run. The tests are in lib/hypotheses.py.
+Reads kb_dir/kanit.sqlite, CARD's ARO index (next to card.card_json, or --aro-index)
+and, for H7 and H6, every organism's AMRFinderPlus calls
+(external_dir/amrfinder_calls.csv and amrfinder_genomes.csv, written by step 16). An
+organism without them is left out of H7 and H6 and listed in the summary; one whose
+reference misses a model genome stops the run. So does an ARO index from another CARD
+release than the knowledge base's (check_index()): reference databases ignore an
+overlay's paths_prefix, so a knowledge base built elsewhere meets the local CARD. The
+tests are in lib/hypotheses.py.
 
 Outputs (cross_model_dir/hypotheses/): one CSV per table and hypotheses.json with
 every criterion, statistic and verdict, and under sensitivity_label_permutation the
@@ -28,6 +31,7 @@ sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
 from lib import hypotheses as hy  # noqa: E402
 from lib import registry  # noqa: E402
 from lib.config import load_config, resolve_path  # noqa: E402
+from lib.databases import card_version  # noqa: E402
 
 CALL_COLUMNS = ["genome_id", "element_symbol", "type", "subtype", "scope", "class", "subclass"]
 
@@ -69,32 +73,55 @@ def references(conn, config) -> tuple[dict[str, pd.DataFrame], list[str]]:
     return out, missing
 
 
+def check_index(conn, aro_file: Path, aro_index: pd.DataFrame, kb_card: str | None) -> None:
+    """Stop unless the ARO index is from the CARD release the knowledge base was built
+    with: the version of the card.json next to it, when there is one, and the AMR gene
+    families of every CARD term the knowledge base holds."""
+    hint = f"pass the ARO index of CARD {kb_card or '(not recorded)'} with --aro-index"
+    card_json = aro_file.parent / "card.json"
+    if kb_card and card_json.exists() and (v := card_version(card_json)) != kb_card:
+        sys.exit(f"ERROR: {aro_file.parent} holds CARD {v}, the knowledge base was built "
+                 f"with CARD {kb_card}; {hint}")
+    bad = hy.index_mismatches(conn, aro_index)
+    if bad:
+        sys.exit(f"ERROR: {aro_file} lacks or files under other AMR gene families {len(bad)} "
+                 f"CARD term(s) of the knowledge base, e.g. {bad[:3]}; {hint}")
+
+
 def main():
     config = load_config()
     ap = argparse.ArgumentParser(description="Hypothesis tests on the knowledge base.")
     ap.add_argument("--kb", type=Path, default=None,
                     help="knowledge base (default: paths_organism.kb_dir/kanit.sqlite)")
+    ap.add_argument("--aro-index", type=Path, default=None,
+                    help="CARD's ARO index of the release the knowledge base was built with "
+                         "(default: aro_index.tsv next to card.card_json)")
     ap.add_argument("--n-mc", type=int, default=10_000, help="Monte Carlo draws of H3")
     ap.add_argument("--seed", type=int, default=0)
     args = ap.parse_args()
     kb_file = args.kb or resolve_path("kb_dir", config=config) / "kanit.sqlite"
     if not kb_file.exists():
         sys.exit(f"ERROR: knowledge base not found: {kb_file}")
-    aro_index = pd.read_csv(PROJECT_ROOT / Path(config["card"]["card_json"]).parent /
-                            "aro_index.tsv", sep="\t", dtype=str)
-    idx = hy.card_family_index(aro_index)
+    aro_file = args.aro_index or (PROJECT_ROOT / Path(config["card"]["card_json"]).parent /
+                                  "aro_index.tsv")
+    if not aro_file.exists():
+        sys.exit(f"ERROR: CARD's ARO index not found: {aro_file}")
+    aro_index = pd.read_csv(aro_file, sep="\t", dtype=str)
     with sqlite3.connect(f"file:{kb_file}?mode=ro", uri=True) as conn:
+        kb_version, kb_card = conn.execute(
+            "SELECT kb_version, card_version FROM release").fetchone()
+        check_index(conn, aro_file, aro_index, kb_card)
+        idx = hy.card_family_index(aro_index)
         reference, missing = references(conn, config)
         keywords = registry.load_amrfinder_keywords()
         res = hy.run(conn, reference, idx, keywords, n_mc=args.n_mc, seed=args.seed)
         sens = hy.sensitivity(conn, reference, idx, keywords, n_mc=args.n_mc, seed=args.seed)
-        kb_version = conn.execute("SELECT kb_version FROM release").fetchone()[0]
     out = resolve_path("cross_model_dir", config=config) / "hypotheses"
     out.mkdir(parents=True, exist_ok=True)
     for name, t in res["tables"].items():
         t.to_csv(out / f"{name}.csv", index=False)
     summary = {"created_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-               "kb_version": kb_version, "kb_file": str(kb_file),
+               "kb_version": kb_version, "kb_file": str(kb_file), "aro_index": str(aro_file),
                "reference_missing": missing, "n_mc": args.n_mc, "seed": args.seed,
                **res["summary"], "sensitivity_label_permutation": sens}
     (out / "hypotheses.json").write_text(json.dumps(_plain(summary), indent=2) + "\n")
