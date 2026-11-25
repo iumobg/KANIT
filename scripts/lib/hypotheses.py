@@ -235,7 +235,8 @@ def carriers(calls: pd.DataFrame, idx: dict[str, set[str]]) -> tuple[dict, dict,
 def model_patterns(conn, mid: str) -> pd.DataFrame:
     """Candidate patterns with their best grade, CARD families and mutation genes."""
     grades = pd.read_sql_query(
-        "SELECT g.pattern_id, g.grade FROM grade g JOIN candidate c USING (model_id, pattern_id) "
+        "SELECT g.pattern_id, g.grade, g.card_state FROM grade g "
+        "JOIN candidate c USING (model_id, pattern_id) "
         "WHERE g.model_id = ? AND g.primary_mode = 1 AND c.route = 'model'", conn,
         params=(mid,))
     hits = pd.read_sql_query(
@@ -307,6 +308,7 @@ def h7(conn, reference: dict[str, pd.DataFrame], idx: dict[str, set[str]], keywo
         for p in pats.itertuples(index=False):
             pattern_rows.append({"model_id": m.model_id, "pattern_id": p.pattern_id,
                                  "grade": p.grade, "has_card_hit": p.has_card_hit,
+                                 "card_state": p.card_state,
                                  "determinants": [d for d in det if matches(
                                      d, p.families, p.mutation_aros)]})
     t = pd.DataFrame(rows)
@@ -329,10 +331,15 @@ def h7(conn, reference: dict[str, pd.DataFrame], idx: dict[str, set[str]], keywo
         table = [[int((a["grade"] == "confirmed").sum()), int((a["grade"] != "confirmed").sum())],
                  [int((b["grade"] == "confirmed").sum()), int((b["grade"] != "confirmed").sum())]]
         p = float(fisher_exact(table, alternative="greater")[1]) if len(a) and len(b) else np.nan
+        # the same two groups split by CARD state: only b = 1 can be confirmed
+        by_state = {st: [[int(((g["card_state"] == st) & (g["grade"] == "confirmed")).sum()),
+                          int(((g["card_state"] == st) & (g["grade"] != "confirmed")).sum())]
+                         for g in (a, b)]
+                    for st in ("b", "card_hit_without_b")} if len(pats_all) else {}
         summary[f"{thr:g}"] = {
             "n_expected": int(len(exp)), "n_recovered": int(len(rec)),
             "share_confirmed": share, "supported_primary": bool(np.isfinite(share) and share >= 0.5),
-            "secondary_table": table, "secondary_p": p,
+            "secondary_table": table, "secondary_p": p, "secondary_table_by_state": by_state,
             "supported_secondary": bool(np.isfinite(p) and p < alpha)}
     return t, summary, dict(unmapped_all)
 

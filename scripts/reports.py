@@ -525,6 +525,24 @@ def _hypothesis_numbers(summary: dict, put, pre: str, label: str = "") -> None:
                         "h7_determinants", "best_grade",
                         f"Share (0-1) {label}H7, threshold {thr}: confirmed among the "
                         f"candidates {'of an expected determinant' if row == 0 else 'with another CARD hit'}")
+        by_state = s.get("secondary_table_by_state") or {}
+        for row, who in ((0, "expected"), (1, "other")):
+            c, nc = (int(x) for x in (by_state.get("b") or [[0, 0], [0, 0]])[row])
+            if c + nc:
+                group = "of an expected determinant" if row == 0 else "with another CARD hit"
+                put(f"{pre}.expected.secondary_b_share_{who}_confirmed.{tag}", c / (c + nc),
+                    "h7_determinants", "best_grade",
+                    f"Share (0-1) {label}H7, threshold {thr}: confirmed among the b = 1 "
+                    f"candidates {group}")
+        without_b = by_state.get("card_hit_without_b")
+        if without_b:
+            put(f"{pre}.expected.secondary_without_b_n.{tag}",
+                sum(int(x) for cells in without_b for x in cells), "h7_determinants", "best_grade",
+                f"{label}H7, threshold {thr}: candidates of both groups with a CARD hit but "
+                f"without b")
+            put(f"{pre}.expected.secondary_without_b_confirmed.{tag}",
+                sum(int(cells[0]) for cells in without_b), "h7_determinants", "best_grade",
+                f"{label}H7, threshold {thr}: of those, confirmed (0 by the rule)")
 
 
 def _flagged_models(lp: pd.DataFrame, models: list[str], alpha: float) -> list[str] | None:
