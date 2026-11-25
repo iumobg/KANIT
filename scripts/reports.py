@@ -1161,6 +1161,15 @@ def _cabbage_numbers(t: Tables, organisms: list[str], put) -> None:
     scores, split, primary, sel = _cabbage_scores(t, organisms, min_per_class)
     _cabbage_flow_numbers(t, organisms, sel, put)
     _cabbage_score_numbers(t, organisms, put)
+    chk = _cabbage_json(t, "cabbage_dir", "search_check.json")
+    if chk:
+        src = "cabbage_search_check"
+        put("search.check.n_isolates", int(chk["n_isolates"]), src, "biosample_id",
+            "External isolates the genome search was checked on")
+        put("search.check.n_calls", int(chk["n_calls"]), src, "rule",
+            "Calls compared (isolate, antibiotic, lookup rule)")
+        put("search.check.n_same", int(chk["n_same"]), src, "same",
+            "Calls on which the genome search and the lookup agree")
     if scores.empty:
         return
     if primary:

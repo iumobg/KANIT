@@ -57,6 +57,8 @@ class CabbageTables:
         return None
 
     def json(self, location, file, organism=None, antibiotic=None):
+        if file == "search_check.json":
+            return {"n_isolates": 12, "n_calls": 120, "n_same": 119}
         if file == "cabbage_lookup_selection.json":
             return {"primary_rule": "upto_strong_novel",
                     "balanced_accuracy": {"upto_confirmed": 0.77, "upto_strong_novel": 0.82}}
@@ -141,3 +143,8 @@ def test_the_score_enters_as_its_roc_auc(keys):
     assert keys["cabbage.lookup_score.median_roc_auc"] == pytest.approx(0.8)
     assert keys["cabbage.lookup_score.min_roc_auc"] == pytest.approx(0.7)
     assert "cabbage.lookup_score.median_ba" not in keys
+
+
+def test_the_genome_search_check_enters(keys):
+    assert keys["search.check.n_isolates"] == 12
+    assert keys["search.check.n_calls"] == 120 and keys["search.check.n_same"] == 119

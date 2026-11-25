@@ -48,6 +48,13 @@ KANIT lookup (added during the study, 2026-11-13; lib/cabbage_lookup.py):
                   intervals (cabbage_lookup_predictions.csv, cabbage_lookup_metrics.json)
   lookup-select   the primary rule from the training counts of every organism
                   (cabbage_dir/cabbage_lookup_selection.json)
+
+Genome search of the knowledge base (added 2026-11-25; lib/genome_search.py):
+
+  search-check    after lookup: the genome search of scripts/kanit_search.py rebuilds the lookup's
+                  rules with its own code (exact match in the assembly instead of unitig-caller).
+                  It runs on a seeded sample of every organism's predicted isolates and its calls
+                  are compared with the lookup's (cabbage_dir/search_check.csv, search_check.json)
 """
 import argparse
 import csv
@@ -589,18 +596,69 @@ def lookup_select(config: dict) -> dict:
     return summary
 
 
+def search_check(config: dict, *, per_organism: int, seed: int) -> dict:
+    import random
+    import sqlite3
+
+    from lib import genome_search as gs
+    db = resolve_path("kb_dir", config=config) / "kanit.sqlite"
+    conn = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
+    ours, theirs = [], []
+    for org in sorted(registry.load_organisms()):
+        f = resolve_path("cabbage_organism_dir", organism=org, config=config) / "cabbage_lookup_predictions.csv"
+        if not f.exists():
+            continue
+        look = pd.read_csv(f, dtype={"biosample_id": str})
+        look = look[look["rule"].isin(gs.RULES)]
+        theirs.append(look)
+        ids = sorted(look["biosample_id"].unique())
+        random.Random(seed).shuffle(ids)
+        genomes = resolve_path("cabbage_genomes_dir", organism=org, config=config)
+        models = gs.models(conn, org)
+        for bid in ids[:per_organism]:
+            res = gs.search(conn, gs.read_assembly(genomes / f"{bid}.fna"), org)
+            presence = res.markers[["model_id", "pattern_id", "present"]]
+            for rule in look["rule"].unique():
+                c = gs.calls(res.markers, presence, models, rule)
+                ours.append(c.assign(organism=org, biosample_id=bid, search=(c["call"] == "R").astype(int))
+                            [["organism", "antibiotic_id", "biosample_id", "rule", "search"]])
+    cols = ["organism", "antibiotic", "biosample_id", "rule", "search", "lookup", "same"]
+    if ours:
+        m = pd.concat(ours).rename(columns={"antibiotic_id": "antibiotic"}).merge(
+            pd.concat(theirs)[["organism", "antibiotic", "biosample_id", "rule", "prediction"]],
+            on=["organism", "antibiotic", "biosample_id", "rule"])
+        m["lookup"] = m["prediction"].astype(int)
+        m["same"] = (m["search"] == m["lookup"]).astype(int)
+        m = m[cols]
+    else:
+        m = pd.DataFrame(columns=cols)
+    out = resolve_path("cabbage_dir", config=config)
+    m.to_csv(out / "search_check.csv", index=False)
+    summary = {"created_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+               "per_organism": per_organism, "seed": seed, "kb_release": gs.release(conn),
+               "organisms": sorted(m["organism"].unique()), "rules": sorted(m["rule"].unique()),
+               "n_isolates": int(m[["organism", "biosample_id"]].drop_duplicates().shape[0]),
+               "n_calls": int(len(m)), "n_same": int(m["same"].sum())}
+    (out / "search_check.json").write_text(json.dumps(summary, indent=2, default=str) + "\n")
+    return summary
+
+
 def main():
     config = load_config()
     ap = argparse.ArgumentParser(description="External validation on CABBAGE.")
     ap.add_argument("command", choices=["download", "select", "fetch", "qc-paths", "prepare",
                                         "assign", "call", "predict", "external-prep",
                                         "external-collect", "compare",
-                                        "lookup-prepare", "lookup-call", "lookup", "lookup-select"])
+                                        "lookup-prepare", "lookup-call", "lookup", "lookup-select",
+                                        "search-check"])
     ap.add_argument("--workers", type=int, default=4, help="assemblies fetched at once")
     ap.add_argument("--organism", help="the organism of the per-organism commands")
     ap.add_argument("--threads", type=int, default=1)
+    ap.add_argument("--per-organism", type=int, default=25, help="search-check: isolates per organism")
+    ap.add_argument("--seed", type=int, default=0, help="search-check: seed of the sample")
     args = ap.parse_args()
-    if args.command not in ("download", "select", "fetch", "lookup-select") and not args.organism:
+    if (args.command not in ("download", "select", "fetch", "lookup-select", "search-check")
+            and not args.organism):
         sys.exit(f"ERROR: {args.command} needs --organism")
     if args.command == "qc-paths":                       # its output is a shell file
         print(qc_paths(args.organism, config), end="")
@@ -644,6 +702,9 @@ def main():
     elif args.command == "lookup-select":
         s = lookup_select(config)
         print(f"  {s['n_models']} models; primary rule {s['primary_rule']}")
+    elif args.command == "search-check":
+        s = search_check(config, per_organism=args.per_organism, seed=args.seed)
+        print(f"  {s['n_isolates']} isolates: {s['n_same']} of {s['n_calls']} calls the same")
     elif args.command == "compare":
         t = compare(args.organism, config)
         if not t.empty:

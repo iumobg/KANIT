@@ -842,6 +842,19 @@ tables:
       - {name: y, type: integer, required: true, enum: [0, 1], description: "Phenotype"}
       - {name: lineage, type: string, required: true, description: "PopPUNK cluster from poppunk_assign"}
       - {name: lineage_seen, type: boolean, required: true, description: "The cluster holds genomes of the model"}
+  cabbage_search_check:
+    location: cabbage_dir
+    file: search_check.csv
+    description: "The genome search of the knowledge base (lib/genome_search.py) against the KANIT lookup on a seeded sample of external isolates (added 2026-11-25)."
+    primary_key: [organism, antibiotic, biosample_id, rule]
+    fields:
+      - {name: organism, type: string, required: true, description: "Organism id"}
+      - {name: antibiotic, type: string, required: true, description: "Antibiotic of the model"}
+      - {name: biosample_id, type: string, required: true, description: "BioSample of the isolate"}
+      - {name: rule, type: string, required: true, enum: [upto_confirmed, upto_strong_novel, upto_candidate, upto_weak, b1], description: "Lookup rule"}
+      - {name: search, type: integer, required: true, enum: [0, 1], description: "Call of the genome search: 1 resistant, 0 susceptible"}
+      - {name: lookup, type: integer, required: true, enum: [0, 1], description: "Call of the lookup (cabbage_lookup_predictions.csv)"}
+      - {name: same, type: integer, required: true, enum: [0, 1], description: "1 when the two calls agree"}
 
 steps:
   snapshot:
@@ -1117,4 +1130,12 @@ steps:
     main: null
     tables: []
     summary: {location: cabbage_dir, file: cabbage_lookup_selection.json}
+    figure: null
+  cabbage_search_check:
+    script: 19_cabbage.py
+    entry: CABBAGE
+    level: global
+    main: cabbage_search_check
+    tables: [cabbage_search_check]
+    summary: {location: cabbage_dir, file: search_check.json}
     figure: null
